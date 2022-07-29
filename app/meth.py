@@ -1,5 +1,3 @@
-import copy
-
 import cv2
 import numpy as np
 from numpy import array
@@ -43,7 +41,6 @@ def move_matrix_up(binary_arr: array):
 
 
 def move_matrix(binary_arr: array, pixel_offset: int, axis: int):
-    print('pixel offset: ' + str(pixel_offset) + 'axis: ' + str(axis))
     roll = np.roll(np.copy(binary_arr), pixel_offset, axis=axis)
     roll[binary_arr > 0] = 0
     return roll
