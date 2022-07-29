@@ -5,7 +5,8 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 
-from app.meth import add_frame, otsu, move_matrix_right, move_matrix_left, move_matrix_up, logical_conjunction
+from app.meth import add_frame, otsu, move_matrix_right, move_matrix_left, move_matrix_up, logical_conjunction, \
+    get_valley_points
 
 path = os.path.join("db\\casia\\small", "*.*")
 # path = os.path.join("db\\11kHands\\small", "*.*")
@@ -24,7 +25,7 @@ for file in path_list:
     # plt.show()
 
     # add frame
-    img_frame = add_frame(30, image, [0, 0, 0])
+    img_frame = add_frame(image, [0, 0, 0])
     # plt.imshow(img_frame)
     # plt.show()
 
@@ -61,6 +62,11 @@ for file in path_list:
     # logical conjunction
     conj = logical_conjunction(bin_hand_l, bin_hand_r, bin_hand_u)
     plt.imshow(conj)
+    plt.show()
+
+    # Translate down & get valley Points
+    valleys = get_valley_points(np.copy(conj), np.copy(img_otsu))
+    plt.imshow(valleys)
     plt.show()
 
 # destroy
