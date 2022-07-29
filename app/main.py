@@ -69,6 +69,7 @@ for file in path_list:
     plt.imshow(valleys)
     plt.show()
 
+print('fin')
 # destroy
 # cv2.waitKey(0)
 # cv2.destroyAllWindows()
