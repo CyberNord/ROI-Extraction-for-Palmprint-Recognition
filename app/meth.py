@@ -88,11 +88,8 @@ def get_cond1(binary_arr: array, c: tuple, height: int, width: int):
         if out_of_bonds(coordinates, height, width):
             return False
 
-    # if binary_arr[arr[0]] == 0 and binary_arr[arr[1]] == 255 and binary_arr[arr[2]] == 255 and binary_arr[arr[3]] == 255:
-    if binary_arr[arr[0]] == 0 :
-        # print(f'Center={c}, up={binary_arr[arr[0]]},right={binary_arr[arr[1]]},down={binary_arr[arr[2]]},left={binary_arr[arr[3]]}')
+    if binary_arr[arr[3]] == 0 and binary_arr[arr[0]] == 255 and binary_arr[arr[1]] == 255 and binary_arr[arr[2]] == 255:
         return True
-    # print(f'up={binary_arr[arr[0]]},right={binary_arr[arr[1]]},down={binary_arr[arr[2]]},left={binary_arr[arr[3]]}')
     return False
 
 

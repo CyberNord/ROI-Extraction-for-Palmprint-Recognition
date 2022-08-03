@@ -86,26 +86,24 @@ for file in path_list:
             if valleys[coord] == 255:
                 check[coord] = (255, 0, 0)
                 if get_cond1(img_otsu, coord, height, width):
-                    check[coord] = (0, 255, 0)
-                    # if get_cond2(img_otsu, coord, height, width):
-                    #     if get_cond3(img_otsu, coord, height, width):
-                    #         if 1 == 2:
-                    #             print("yes")
-                    #     else:
-                    #         # counter += 1
-                    #         # print(f'pre:{valley_blobs[coord]}')
-                    #         valley_blobs[coord] = 0
-                    #         # print(f'past:{valley_blobs[coord]}')
-                    # else:
-                    #     # counter += 1
-                    #     # print(f'pre:{valley_blobs[coord]}')
-                    #     valley_blobs[coord] = 0
-                    #     # print(f'past:{valley_blobs[coord]}')
+                    if get_cond2(img_otsu, coord, height, width):
+                        if get_cond3(img_otsu, coord, height, width):
+                            check[coord] = (0, 255, 0)
+                        else:
+                            # counter += 1
+                            # print(f'pre:{valley_blobs[coord]}')
+                            valley_blobs[coord] = 0
+                            # print(f'past:{valley_blobs[coord]}')
+                    else:
+                        # counter += 1
+                        # print(f'pre:{valley_blobs[coord]}')
+                        valley_blobs[coord] = 0
+                        # print(f'past:{valley_blobs[coord]}')
                 else:
-                    counter += 1
-                    print(f'pre:{valley_blobs[coord]}')
+                    # counter += 1
+                    # print(f'pre:{valley_blobs[coord]}')
                     valley_blobs[coord] = 0
-                    print(f'past:{valley_blobs[coord]}')
+                    # print(f'past:{valley_blobs[coord]}')
 
     print(counter)
 
@@ -114,9 +112,9 @@ for file in path_list:
     # plt.imshow(valley_blobs)
     # plt.show()
     #
-    # valley_blobs = cv2.dilate(valley_blobs, None, iterations=1)
-    # plt.imshow(valley_blobs, cmap='gray')
-    # plt.show()
+    valley_blobs = cv2.dilate(valley_blobs, None, iterations=1)
+    plt.imshow(valley_blobs, cmap='gray')
+    plt.show()
 
     # moments = []
     # centroids = []
