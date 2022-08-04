@@ -1,6 +1,9 @@
+import math
+
 import cv2
 import numpy as np
 from numpy import array
+from scipy.stats import linregress
 
 from app.constants import OTSU_LOWER, OTSU_HIGHER, PIXEL_OFFSET, PIXEL_OFFSET_NEG, VALLEY_GAP_OFFSET, A_HORIZONTAL, \
     A_VERTICAL, M_CALCULATION, M_VISIBLE, V_ALPHA, V_BETA, V_GAMMA, V_CIRCLE_COLOR, V_CHECKPOINT_COLOR, V_TEST_COLOR
@@ -163,7 +166,42 @@ def get_cond3(binary_arr: array, c: tuple, height: int, width: int):
 
 
 # draw hand valleys (visualisation)
-def draw_circle(c: tuple, img_gray: array):
-    cv2.circle(img_gray, c, 1, V_CIRCLE_COLOR)
-    cv2.circle(img_gray, c, 10, V_CIRCLE_COLOR)
+def draw_circle(c: tuple, img_gray: array, color=V_CIRCLE_COLOR):
+    cv2.circle(img_gray, c, 0, color, 3)
+    cv2.circle(img_gray, c, 10, color)
     return img_gray
+
+
+def draw_single_point(c: tuple, img_gray: array, color=V_CIRCLE_COLOR):
+    cv2.circle(img_gray, c, 0, color, 3)
+    return img_gray
+
+
+def draw_points(centroids: array, img: array, color=V_CIRCLE_COLOR, bool=True):
+    p = 1
+    for c in centroids:
+        (x, y) = c[0], c[1] - V_ALPHA
+        cv2.circle(img, c, 0, color, 6)
+        if bool:
+            img = cv2.putText(img, f'P{p}', (x, y), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
+            if p == 2 or p == 4:
+                print(f'coordinates of p{p}:({c}) at array position centroids[{p - 1}]')
+        p += 1
+    return img
+
+
+def get_slope(p2: tuple, p4: tuple):
+    slope, _, _, _, _ = linregress(p2, p4)
+    return slope
+
+
+def rotate(origin, points, angle):
+    result = []
+
+    for point in points:
+        x = origin[0] + math.cos(angle) * (point[0] - origin[0]) - math.sin(angle) * (point[1] - origin[1])
+        y = origin[1] + math.sin(angle) * (point[0] - origin[0]) + math.cos(angle) * (point[1] - origin[1])
+        r = (int(x), int(y))
+        result.append(r)
+
+    return result

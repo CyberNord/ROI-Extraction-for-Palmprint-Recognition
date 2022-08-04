@@ -18,7 +18,7 @@ M_VISIBLE = 255
 M_CALCULATION = 1
 
 # valley checking
-V_ALPHA = 5
+V_ALPHA = 10
 V_BETA = 5
 V_GAMMA = 5
 V_CIRCLE_COLOR = (255, 0, 0)            # Red

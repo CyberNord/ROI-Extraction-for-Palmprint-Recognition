@@ -1,12 +1,17 @@
 import glob
+import math
 import os
 import cv2
+import imutils as imutils
 import matplotlib.pyplot as plt
 import numpy as np
-from app.meth import add_frame, otsu, move_matrix_right, move_matrix_left, move_matrix_up, logical_conjunction, \
-    get_valley_points, get_cond1, get_cond2, get_cond3, draw_circle
+from PIL import ImageDraw
 
-path = os.path.join("db\\casia\\small", "*.*")
+from app.meth import otsu, move_matrix_right, move_matrix_left, move_matrix_up, logical_conjunction, \
+    get_valley_points, get_cond1, get_cond2, get_cond3, draw_circle, draw_points, rotate, get_slope
+
+path = os.path.join("db\\casia\\small2", "*.*")
+# path = os.path.join("db\\casia\\samples_1", "*.*")
 # path = os.path.join("db\\11kHands\\small", "*.*")
 cv_img = []
 path_list = glob.glob(path)
@@ -30,40 +35,42 @@ for file in path_list:
 
     # Gray
     height, width, _ = image.shape
+    center = (int((width-1)/2), int((height-1)/2))
+    print(f'height={height},width={width}, center={center}')
     img_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # img_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    # cv2.imshow('gray', img_gray)
-    # cv2.waitKey(0)
+    # plt.imshow(img_gray, cmap='gray')
+    # plt.show()
 
     # Otsu
     ret, img_otsu = otsu(img_gray)
-    # plt.imshow(img_otsu)
+    # plt.imshow(img_otsu, cmap='gray')
     # plt.show()
 
     # Valley Point Detection Based on TPDTR
     # roll to right
     bin_hand_r = move_matrix_right(np.copy(img_otsu))
-    # plt.imshow(bin_hand_r)
+    # plt.imshow(bin_hand_r, cmap='gray')
     # plt.show()
 
     # roll to left
     bin_hand_l = move_matrix_left(np.copy(img_otsu))
-    # plt.imshow(bin_hand_l)
+    # plt.imshow(bin_hand_l, cmap='gray')
     # plt.show()
 
     # roll to up
     bin_hand_u = move_matrix_up(np.copy(img_otsu))
-    # plt.imshow(bin_hand_u)
+    # plt.imshow(bin_hand_u, cmap='gray')
     # plt.show()
 
     # logical conjunction
     conj = logical_conjunction(bin_hand_l, bin_hand_r, bin_hand_u)
-    # plt.imshow(conj)
+    # plt.imshow(conj, cmap='gray')
     # plt.show()
 
     # Translate down & get valley Points
     valleys = get_valley_points(np.copy(conj), np.copy(img_otsu))
-    # plt.imshow(valleys)
+    # plt.imshow(valleys, cmap='gray')
     # plt.show()
 
     # ------------------------------
@@ -77,8 +84,8 @@ for file in path_list:
     # ------------------------------
     valley_blobs = np.copy(valleys)
     check = np.copy(image)
-    plt.imshow(valleys, cmap='gray')
-    plt.show()
+    # plt.imshow(valleys, cmap='gray')
+    # plt.show()
     counter = 0
     for i in range(len(valleys)):
         for j in range(len(valleys[i])):
@@ -105,15 +112,15 @@ for file in path_list:
                     valley_blobs[coord] = 0
                     # print(f'past:{valley_blobs[coord]}')
 
-    print(counter)
+    # print(counter)
 
     # visualizes the pixels that were removed & the one that stay
-    plt.imshow(check)
-    plt.show()
+    # plt.imshow(check)
+    # plt.show()
 
     # valley blobs
-    plt.imshow(valley_blobs, cmap='gray')
-    plt.show()
+    # plt.imshow(valley_blobs, cmap='gray')
+    # plt.show()
 
     moments = []
     centroids = []
@@ -127,7 +134,7 @@ for file in path_list:
 
         for cnt in contours0:
             moments.append(cv2.moments(cnt))
-            print("moments= " + str(moments))
+            # print("moments= " + str(moments))
 
         for m in moments:
             divisor: float
@@ -139,17 +146,63 @@ for file in path_list:
         if len(centroids) == 4:
             search_c = False
         else:
+            # if itr == 1:
+            #     valley_blobs = cv2.erode(valley_blobs, None, iterations=1)
             moments = []
             centroids = []
             valley_blobs = cv2.dilate(valley_blobs, None, iterations=1)
+            # plt.imshow(valley_blobs)
+            # plt.show()
 
     print(f"centroids={centroids} - iterations:{itr}")
 
     valley_centroids = np.copy(image)
+    valley_points = np.copy(image)
     for c in centroids:
         valley_centroids = draw_circle(c, valley_centroids)
 
-    plt.imshow(valley_centroids)
+    # plt.imshow(valley_centroids)
+    # plt.show()
+
+    # sort list by y-value
+    sorted_list = sorted(centroids, key=lambda y: y[0])
+    print(f'sorted list: {sorted_list}')
+
+    # distinguish between left and right hand
+    right_Hand = True
+    if sorted_list[0][1] < sorted_list[3][1]:
+        right_Hand = False
+        sorted_list.reverse()
+    valley_points = draw_points(sorted_list, valley_points)
+
+    # plt.imshow(valley_points)
+    # plt.show()
+
+    slope = int(get_slope(sorted_list[1], sorted_list[3]))
+    angle = math.degrees(math.atan2(sorted_list[3][1] - sorted_list[1][1], sorted_list[3][0] - sorted_list[1][0]))
+    m = int(math.dist(sorted_list[1], sorted_list[3]))
+
+    # plt.imshow(valley_points)
+    # plt.show()
+
+    if right_Hand:
+        output_image = imutils.rotate(valley_points, angle=angle)
+        rotated_coordinates = rotate(center, sorted_list, math.radians(slope))
+        output_image = draw_points(rotated_coordinates, output_image, (255, 200, 0), False)
+    else:
+        output_image = imutils.rotate(valley_points, angle=180+angle)
+
+    cv2.circle(output_image, center, 0, (255, 0, 255), 5)  # center point
+    # plt.imshow(output_image)
+    # plt.show()
+
+    # valley_points = draw_points(sorted_list, output_image, (0, 255, 255), False)
+    # plt.imshow(valley_points)
+    # plt.show()
+
+
+
+    plt.imshow(output_image)
     plt.show()
 
     print('-------------next Image-------------')
