@@ -4,7 +4,7 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from app.meth import add_frame, otsu, move_matrix_right, move_matrix_left, move_matrix_up, logical_conjunction, \
-    get_valley_points, get_cond1, get_cond2, get_cond3
+    get_valley_points, get_cond1, get_cond2, get_cond3, draw_circle
 
 path = os.path.join("db\\casia\\small", "*.*")
 # path = os.path.join("db\\11kHands\\small", "*.*")
@@ -107,54 +107,51 @@ for file in path_list:
 
     print(counter)
 
+    # visualizes the pixels that were removed & the one that stay
     plt.imshow(check)
     plt.show()
-    # plt.imshow(valley_blobs)
-    # plt.show()
-    #
-    valley_blobs = cv2.dilate(valley_blobs, None, iterations=1)
+
+    # valley blobs
     plt.imshow(valley_blobs, cmap='gray')
     plt.show()
 
-    # moments = []
-    # centroids = []
-    # contours0, _ = cv2.findContours(valleys.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
-    #
-    # for cnt in contours0:
-    #     moments.append(cv2.moments(cnt))
-    #
-    # print("moments= " + str(moments))
-    #
-    # for m in moments:
-    #     centroids.append((int(round(m['m10'] / m['m00'])), int(round(m['m01'] / m['m00']))))
-    #
-    # print("centroids= " + str(centroids))
-    #
-    # img_4_px = np.copy(image)
-    # img_8_px = np.copy(image)
-    # img_16_px = np.copy(image)
-    # cond1 = 0
-    # cond2 = 0
-    # cond3 = 0
-    # for c in centroids:
-    #     print(f'c={c}')
-    #     img_4_px = draw_cond_1(c, img_4_px)
-    #     print(f'before:{img_otsu[(78, 323)]}')
-    #     cond1 = get_cond1(c, np.copy(img_otsu))
-    #
-    #     # img_8_px = draw_cond_2(c, img_8_px)
-    #     # img_16_px = draw_cond_3(c, img_16_px)
-    #
-    # print(cond1)
-    # plt.imshow(img_4_px)
-    # plt.show()
-    # plt.imshow(img_otsu)
-    # plt.show()
+    moments = []
+    centroids = []
 
-    # plt.imshow(img_8_px)
-    # plt.show()
-    # plt.imshow(img_16_px)
-    # plt.show()
+    itr = 0
+    search_c = True
+    while search_c and itr < 5:
+        itr += 1
+
+        contours0, _ = cv2.findContours(valley_blobs.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+
+        for cnt in contours0:
+            moments.append(cv2.moments(cnt))
+            print("moments= " + str(moments))
+
+        for m in moments:
+            divisor: float
+            if m['m00'] == 0:
+                divisor = 0.1
+            else:
+                divisor = m['m00']
+            centroids.append((int(round(m['m10'] / divisor)), int(round(m['m01'] / divisor))))
+        if len(centroids) == 4:
+            search_c = False
+        else:
+            moments = []
+            centroids = []
+            valley_blobs = cv2.dilate(valley_blobs, None, iterations=1)
+
+    print(f"centroids={centroids} - iterations:{itr}")
+
+    valley_centroids = np.copy(image)
+    for c in centroids:
+        valley_centroids = draw_circle(c, valley_centroids)
+
+    plt.imshow(valley_centroids)
+    plt.show()
+
     print('-------------next Image-------------')
 
 print('fin')

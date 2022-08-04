@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-from matplotlib import pyplot as plt
 from numpy import array
 
 from app.constants import OTSU_LOWER, OTSU_HIGHER, PIXEL_OFFSET, PIXEL_OFFSET_NEG, VALLEY_GAP_OFFSET, A_HORIZONTAL, \
@@ -76,28 +75,32 @@ def out_of_bonds(coordinates, height, width):
     return True
 
 
-# Four-point check
+# Condition1: four-point check
+# radius = Alpha
 # top is black & right, bottom, left are white
 def get_cond1(binary_arr: array, c: tuple, height: int, width: int):
-    # clockwise top, right, bottom, left
+    # 4-positions
+    # top, right, bottom, left
     arr = ((c[0], c[1] - V_ALPHA),
            (c[0] + V_ALPHA, c[1]),
            (c[0], c[1] + V_ALPHA),
-           (c[0] - V_ALPHA, c[1]))
+           (c[0] - V_ALPHA, c[1]))  # top
     for coordinates in arr:
         if out_of_bonds(coordinates, height, width):
             return False
-
-    if binary_arr[arr[3]] == 0 and binary_arr[arr[0]] == 255 and binary_arr[arr[1]] == 255 and binary_arr[arr[2]] == 255:
+    if binary_arr[arr[3]] == 0 \
+            and binary_arr[arr[0]] == 255 and binary_arr[arr[1]] == 255 and binary_arr[arr[2]] == 255:
         return True
     return False
 
 
+# Condition2: eight-point check
+# radius = Alpha + Beta
+# at least 1 and not more than 4 white pixels
 def get_cond2(binary_arr: array, c: tuple, height: int, width: int):
     radius = (V_ALPHA + V_BETA)
     diag = int(radius * 0.7)
-
-    # clockwise 8-positions
+    # 8-positions
     # top, top right, right, bottom right, bottom, bottom left, left, top left
     arr = ((c[0], c[1] - radius),
            (c[0] + diag, c[1] - diag),
@@ -107,27 +110,28 @@ def get_cond2(binary_arr: array, c: tuple, height: int, width: int):
            (c[0] - diag, c[1] + diag),
            (c[0] - radius, c[1]),
            (c[0] - diag, c[1] - diag))
-
     count = 0
     for coordinates in arr:
         if out_of_bonds(coordinates, height, width):
             return False
         if binary_arr[coordinates] == 0:
             count += 1
-
-    if 0 < count <= 4:
+    if 1 <= count <= 4:
         return True
     else:
         return False
 
 
+# Condition3: sixteen-point check
+# radius = Alpha + Beta + Gamma
+# at least 1 and not more than 7 white pixels
 def get_cond3(binary_arr: array, c: tuple, height: int, width: int):
     radius = (V_ALPHA + V_BETA + V_GAMMA)
     diag = int(radius * 0.7)
     off_16_a = int(radius * 0.9)
     off_16_b = int(radius * 0.4)
 
-    # clockwise 16-positions (x-pos)
+    # 16-positions (x-pos)
     # top, x1, top right, x2, right, x3, bottom right, x4, bottom, x5, bottom left, x6, left, x7, top left, x8
     arr = ((c[0], c[1] - radius),
            (c[0] + off_16_b, c[1] - off_16_a),
@@ -152,65 +156,14 @@ def get_cond3(binary_arr: array, c: tuple, height: int, width: int):
         if binary_arr[coordinates] == 0:
             count += 1
 
-    if 0 < count <= 7:
+    if 1 <= count <= 7:
         return True
     else:
         return False
 
 
-# draw conditions (visualisation)
-def draw_cond_1(c: tuple, img_gray: array):
-    img = draw_4(c, img_gray, V_ALPHA)
-
-    return img
-
-
-def draw_cond_2(c: tuple, img_gray: array):
-    a_b = V_ALPHA + V_BETA
-    img = draw_8(c, img_gray, a_b)
-    return img
-
-
-def draw_cond_3(c: tuple, img_gray: array):
-    a_b_c = V_ALPHA + V_BETA + V_GAMMA
-    img = draw_16(c, img_gray, a_b_c)
-    return img
-
-
-def draw_4(c: tuple, img_gray: array, radius: int):
-    cv2.circle(img_gray, c, radius, V_CIRCLE_COLOR)
-    cv2.circle(img_gray, (c[0], c[1] - radius), 3, V_CHECKPOINT_COLOR)  # top
-    cv2.circle(img_gray, (c[0] + radius, c[1]), 3, V_CHECKPOINT_COLOR)  # right
-    cv2.circle(img_gray, (c[0], c[1] + radius), 3, V_CHECKPOINT_COLOR)  # bottom
-    cv2.circle(img_gray, (c[0] - radius, c[1]), 3, V_CHECKPOINT_COLOR)  # left
+# draw hand valleys (visualisation)
+def draw_circle(c: tuple, img_gray: array):
+    cv2.circle(img_gray, c, 1, V_CIRCLE_COLOR)
+    cv2.circle(img_gray, c, 10, V_CIRCLE_COLOR)
     return img_gray
-
-
-def draw_8(c: tuple, img_gray: array, radius: int):
-    img = draw_4(c, img_gray, radius)
-    a_bK = int(radius * 0.7)
-
-    cv2.circle(img, (c[0] + a_bK, c[1] + a_bK), 3, V_CHECKPOINT_COLOR)  # bottom right
-    cv2.circle(img, (c[0] - a_bK, c[1] - a_bK), 3, V_CHECKPOINT_COLOR)  # top left
-    cv2.circle(img, (c[0] + a_bK, c[1] - a_bK), 3, V_CHECKPOINT_COLOR)  # top right
-    cv2.circle(img, (c[0] - a_bK, c[1] + a_bK), 3, V_CHECKPOINT_COLOR)  # bottom left
-
-    return img
-
-
-def draw_16(c: tuple, img_gray: array, radius: int):
-    img = draw_8(c, img_gray, radius)
-    off_16_a = int(radius * 0.9)
-    off_16_b = int(radius * 0.4)
-
-    cv2.circle(img_gray, (c[0] + off_16_b, c[1] - off_16_a), 3, V_CHECKPOINT_COLOR)  # x1
-    cv2.circle(img_gray, (c[0] + off_16_b, c[1] + off_16_a), 3, V_CHECKPOINT_COLOR)  # x4
-    cv2.circle(img_gray, (c[0] - off_16_b, c[1] - off_16_a), 3, V_CHECKPOINT_COLOR)  # x8
-    cv2.circle(img_gray, (c[0] - off_16_b, c[1] + off_16_a), 3, V_CHECKPOINT_COLOR)  # x5
-
-    cv2.circle(img_gray, (c[0] + off_16_a, c[1] - off_16_b), 3, V_CHECKPOINT_COLOR)  # x2
-    cv2.circle(img_gray, (c[0] + off_16_a, c[1] + off_16_b), 3, V_CHECKPOINT_COLOR)  # x3
-    cv2.circle(img_gray, (c[0] - off_16_a, c[1] - off_16_b), 3, V_CHECKPOINT_COLOR)  # x7
-    cv2.circle(img_gray, (c[0] - off_16_a, c[1] + off_16_b), 3, V_CHECKPOINT_COLOR)  # x6
-
-    return img
