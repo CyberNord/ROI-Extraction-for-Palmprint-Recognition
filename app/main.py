@@ -204,7 +204,6 @@ for file in path_list:
     roi = cut_roi(np.copy(roi_vis), rotated_coordinates[1], rotated_coordinates[3], right_hand)
     plt.imshow(roi)
     plt.show()
-
     print('-------------next Image-------------')
 
 print('fin')
