@@ -195,13 +195,31 @@ def get_slope(p2: tuple, p4: tuple):
     return slope
 
 
-def rotate(origin, points, angle):
+def rotate(center, points, angle):
     result = []
 
     for point in points:
-        x = origin[0] + math.cos(angle) * (point[0] - origin[0]) - math.sin(angle) * (point[1] - origin[1])
-        y = origin[1] + math.sin(angle) * (point[0] - origin[0]) + math.cos(angle) * (point[1] - origin[1])
-        r = (int(x), int(y))
+
+        new_pt = (point[0] - center[0], point[1] - center[1])
+        print(f'old_pt={point} --> new_pt={new_pt}')
+
+        print(f'angle={angle}')
+        # ( x' * cos(alpha) ) - ( y' * sin(alpha)) + off = x
+        # ( x' * sin(alpha) ) + ( y' * cos(alpha)) + off = y
+        x = (new_pt[1] * np.cos(angle)) - (new_pt[0] * np.sin(angle)) + center[1]
+        print(f'({new_pt[1]} * cos({angle})) - ({new_pt[0]} * sin({angle})) + {center[1]} = {x}')
+
+        y = (new_pt[1] * np.sin(angle)) + (new_pt[0] * np.cos(angle)) + center[0]
+        print(f'({new_pt[1]} * sin({angle})) + ({new_pt[0]} * cos({angle})) + {center[0]} = {y} + \n')
+
+        r = (round(y), round(x))
         result.append(r)
 
     return result
+
+
+def rotate_matrix(x, y, angle):
+    # Rotation matrix multiplication to get rotated x & y
+    xr = (x * math.cos(angle)) - (y * math.sin(angle))
+    yr = (x * math.sin(angle)) + (y * math.cos(angle))
+    return xr, yr

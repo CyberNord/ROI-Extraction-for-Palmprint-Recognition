@@ -35,7 +35,7 @@ for file in path_list:
 
     # Gray
     height, width, _ = image.shape
-    center = (int((width-1)/2), int((height-1)/2))
+    center = (int(width / 2), int(height / 2))
     print(f'height={height},width={width}, center={center}')
     img_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # img_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -174,37 +174,34 @@ for file in path_list:
         right_Hand = False
         sorted_list.reverse()
     valley_points = draw_points(sorted_list, valley_points)
-
     # plt.imshow(valley_points)
     # plt.show()
 
-    slope = int(get_slope(sorted_list[1], sorted_list[3]))
+    # x4-x2,y4-y2
     angle = math.degrees(math.atan2(sorted_list[3][1] - sorted_list[1][1], sorted_list[3][0] - sorted_list[1][0]))
-    m = int(math.dist(sorted_list[1], sorted_list[3]))
 
-    # plt.imshow(valley_points)
-    # plt.show()
+    # slope = int(get_slope(sorted_list[1], sorted_list[3]))
+    # distance = int(math.dist(sorted_list[1], sorted_list[3]))
 
     if right_Hand:
         output_image = imutils.rotate(valley_points, angle=angle)
-        rotated_coordinates = rotate(center, sorted_list, math.radians(slope))
-        output_image = draw_points(rotated_coordinates, output_image, (255, 200, 0), False)
+        cv2.circle(output_image, center, 0, (255, 0, 255), 5)  # center point
+        plt.imshow(output_image)
+        plt.show()
+        print(f'center={center}')
+
+        a = angle * np.pi / 180
+        rotated_coordinates = rotate(center, sorted_list, a) # !!!
+
+        print(f'not_rotated_coordinates: {sorted_list}')
+        print(f'rotated_coordinates={rotated_coordinates}')
+
+        output_image = draw_points(rotated_coordinates, output_image, (255, 250, 0), False) # ist
     else:
         output_image = imutils.rotate(valley_points, angle=180+angle)
-
-    cv2.circle(output_image, center, 0, (255, 0, 255), 5)  # center point
-    # plt.imshow(output_image)
-    # plt.show()
-
-    # valley_points = draw_points(sorted_list, output_image, (0, 255, 255), False)
-    # plt.imshow(valley_points)
-    # plt.show()
-
-
+    print('-------------next Image-------------')
 
     plt.imshow(output_image)
     plt.show()
-
-    print('-------------next Image-------------')
 
 print('fin')
