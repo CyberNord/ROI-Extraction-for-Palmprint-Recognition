@@ -2,8 +2,6 @@
 OTSU_LOWER = 0          # Black
 OTSU_HIGHER = 255       # White
 
-
-
 # Shifting
 PIXEL_OFFSET = 20
 PIXEL_OFFSET_NEG = -PIXEL_OFFSET
@@ -21,6 +19,3 @@ M_CALCULATION = 1
 V_ALPHA = 10
 V_BETA = 5
 V_GAMMA = 5
-V_CIRCLE_COLOR = (255, 0, 0)            # Red
-V_CHECKPOINT_COLOR = (255, 255, 0)      # Yellow
-V_TEST_COLOR = (0, 0, 255)

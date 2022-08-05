@@ -8,9 +8,9 @@ import numpy as np
 from PIL import ImageDraw
 
 from app.meth import otsu, move_matrix_right, move_matrix_left, move_matrix_up, logical_conjunction, \
-    get_valley_points, get_cond1, get_cond2, get_cond3, draw_circle, draw_points, rotate, get_slope
+    get_valley_points, get_cond1, get_cond2, get_cond3, draw_circle, draw_points, rotate, draw_roi, cut_roi
 
-path = os.path.join("db\\casia\\small2", "*.*")
+path = os.path.join("db\\casia\\small", "*.*")
 # path = os.path.join("db\\casia\\samples_1", "*.*")
 # path = os.path.join("db\\11kHands\\small", "*.*")
 cv_img = []
@@ -21,7 +21,7 @@ path_list = glob.glob(path)
 for file in path_list:
     # Read in pic & rotate
     image = cv2.imread(file)
-    image = cv2.rotate(image, cv2.cv2.ROTATE_90_CLOCKWISE)
+    image = cv2.rotate(cv2.imread(file), cv2.cv2.ROTATE_90_CLOCKWISE)
     # image = np.flip(image, axis=1)
     # plt.imshow(image)
     # plt.show()
@@ -169,9 +169,9 @@ for file in path_list:
     print(f'sorted list: {sorted_list}')
 
     # distinguish between left and right hand
-    right_Hand = True
+    right_hand = True
     if sorted_list[0][1] < sorted_list[3][1]:
-        right_Hand = False
+        right_hand = False
         sorted_list.reverse()
     valley_points = draw_points(sorted_list, valley_points)
     # plt.imshow(valley_points)
@@ -183,25 +183,28 @@ for file in path_list:
     # slope = int(get_slope(sorted_list[1], sorted_list[3]))
     # distance = int(math.dist(sorted_list[1], sorted_list[3]))
 
-    if right_Hand:
-        output_image = imutils.rotate(valley_points, angle=angle)
-        cv2.circle(output_image, center, 0, (255, 0, 255), 5)  # center point
-        plt.imshow(output_image)
-        plt.show()
-        print(f'center={center}')
+    if not right_hand:
+        angle += 180
 
-        a = angle * np.pi / 180
-        rotated_coordinates = rotate(center, sorted_list, a) # !!!
+    output_image = imutils.rotate(valley_points, angle=angle)
+    image = imutils.rotate(image, angle=angle)
+    cv2.circle(output_image, center, 0, (255, 0, 255), 5)  # center point
+    a = angle * np.pi / 180
 
-        print(f'not_rotated_coordinates: {sorted_list}')
-        print(f'rotated_coordinates={rotated_coordinates}')
-
-        output_image = draw_points(rotated_coordinates, output_image, (255, 250, 0), False) # ist
-    else:
-        output_image = imutils.rotate(valley_points, angle=180+angle)
-    print('-------------next Image-------------')
+    rotated_coordinates = rotate(center, sorted_list, a)
+    output_image = draw_points(rotated_coordinates, output_image, (255, 250, 0), False)
 
     plt.imshow(output_image)
     plt.show()
+
+    roi_vis = draw_roi(np.copy(output_image), rotated_coordinates[1], rotated_coordinates[3],True)
+    plt.imshow(roi_vis)
+    plt.show()
+
+    roi = cut_roi(np.copy(roi_vis), rotated_coordinates[1], rotated_coordinates[3], right_hand)
+    plt.imshow(roi)
+    plt.show()
+
+    print('-------------next Image-------------')
 
 print('fin')

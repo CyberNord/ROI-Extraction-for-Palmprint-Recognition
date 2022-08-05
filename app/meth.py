@@ -3,10 +3,20 @@ import math
 import cv2
 import numpy as np
 from numpy import array
-from scipy.stats import linregress
 
 from app.constants import OTSU_LOWER, OTSU_HIGHER, PIXEL_OFFSET, PIXEL_OFFSET_NEG, VALLEY_GAP_OFFSET, A_HORIZONTAL, \
-    A_VERTICAL, M_CALCULATION, M_VISIBLE, V_ALPHA, V_BETA, V_GAMMA, V_CIRCLE_COLOR, V_CHECKPOINT_COLOR, V_TEST_COLOR
+    A_VERTICAL, M_CALCULATION, M_VISIBLE, V_ALPHA, V_BETA, V_GAMMA
+
+# Color values (RGB)
+BLACK = (0, 0, 0)
+DARK = (1, 1, 1)
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+PINK = (255, 0, 255)
+YELLOW = (255, 255, 0)
+CYAN = (0, 255, 255)
 
 
 # ### Preprocessing ###
@@ -166,23 +176,23 @@ def get_cond3(binary_arr: array, c: tuple, height: int, width: int):
 
 
 # draw hand valleys (visualisation)
-def draw_circle(c: tuple, img_gray: array, color=V_CIRCLE_COLOR):
+def draw_circle(c: tuple, img_gray: array, color=RED):
     cv2.circle(img_gray, c, 0, color, 3)
     cv2.circle(img_gray, c, 10, color)
     return img_gray
 
 
-def draw_single_point(c: tuple, img_gray: array, color=V_CIRCLE_COLOR):
+def draw_single_point(c: tuple, img_gray: array, color=RED):
     cv2.circle(img_gray, c, 0, color, 3)
     return img_gray
 
 
-def draw_points(centroids: array, img: array, color=V_CIRCLE_COLOR, bool=True):
+def draw_points(centroids: array, img: array, color=RED, debug=True):
     p = 1
     for c in centroids:
         (x, y) = c[0], c[1] - V_ALPHA
         cv2.circle(img, c, 0, color, 6)
-        if bool:
+        if debug:
             img = cv2.putText(img, f'P{p}', (x, y), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
             if p == 2 or p == 4:
                 print(f'coordinates of p{p}:({c}) at array position centroids[{p - 1}]')
@@ -190,27 +200,19 @@ def draw_points(centroids: array, img: array, color=V_CIRCLE_COLOR, bool=True):
     return img
 
 
-def get_slope(p2: tuple, p4: tuple):
-    slope, _, _, _, _ = linregress(p2, p4)
-    return slope
-
-
 def rotate(center, points, angle):
     result = []
 
     for point in points:
-
         new_pt = (point[0] - center[0], point[1] - center[1])
-        print(f'old_pt={point} --> new_pt={new_pt}')
 
-        print(f'angle={angle}')
         # ( x' * cos(alpha) ) - ( y' * sin(alpha)) + off = x
-        # ( x' * sin(alpha) ) + ( y' * cos(alpha)) + off = y
         x = (new_pt[1] * np.cos(angle)) - (new_pt[0] * np.sin(angle)) + center[1]
-        print(f'({new_pt[1]} * cos({angle})) - ({new_pt[0]} * sin({angle})) + {center[1]} = {x}')
+        # print(f'({new_pt[1]} * cos({angle})) - ({new_pt[0]} * sin({angle})) + {center[1]} = {x}')
 
+        # ( x' * sin(alpha) ) + ( y' * cos(alpha)) + off = y
         y = (new_pt[1] * np.sin(angle)) + (new_pt[0] * np.cos(angle)) + center[0]
-        print(f'({new_pt[1]} * sin({angle})) + ({new_pt[0]} * cos({angle})) + {center[0]} = {y} + \n')
+        # print(f'({new_pt[1]} * sin({angle})) + ({new_pt[0]} * cos({angle})) + {center[0]} = {y} + \n')
 
         r = (round(y), round(x))
         result.append(r)
@@ -218,8 +220,37 @@ def rotate(center, points, angle):
     return result
 
 
-def rotate_matrix(x, y, angle):
-    # Rotation matrix multiplication to get rotated x & y
-    xr = (x * math.cos(angle)) - (y * math.sin(angle))
-    yr = (x * math.sin(angle)) + (y * math.cos(angle))
-    return xr, yr
+def calculate_roi_params(p2: tuple, p4: tuple):
+    distance = int(math.dist(p2, p4))
+    off = round(distance * 0.2)
+    q1 = (p2[0], p2[1] + off)
+    q3 = (p4[0], p4[1] + distance + off)
+
+    return distance, off, q1, q3
+
+
+def draw_roi(img: array, p2: tuple, p4: tuple, debug=False, color=RED, thickness=2):
+    distance, off, q1, q3 = calculate_roi_params(p2, p4)
+    if debug:
+        q4 = (p4[0], p4[1] + off)
+        q2 = (p2[0], p4[1] + distance + off)
+        img = cv2.rectangle(img, p2, q4, YELLOW, thickness)
+        img = cv2.circle(img, p2, 0, PINK, 5)
+        img = cv2.circle(img, p4, 0, PINK, 5)
+        img = cv2.circle(img, p4, 0, PINK, 5)
+        img = cv2.circle(img, q1, 0, BLUE, 10)
+        img = cv2.circle(img, q2, 0, GREEN, 10)
+        img = cv2.circle(img, q3, 0, GREEN, 10)
+        img = cv2.circle(img, q4, 0, BLUE, 10)
+
+    return cv2.rectangle(img, q1, q3, color, thickness)
+
+
+def cut_roi(img: array, p2: tuple, p4: tuple, right_hand):
+    distance, off, q1, q3 = calculate_roi_params(p2, p4)
+    if not right_hand:
+        q4 = (p4[0], p4[1] + off)
+        q2 = (p2[0], p4[1] + distance + off)
+        return img[q4[1]:q2[1], q4[0]:q2[0]]
+
+    return img[q1[1]:q3[1], q1[0]:q3[0]]
