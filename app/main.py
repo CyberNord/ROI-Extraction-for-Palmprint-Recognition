@@ -1,39 +1,46 @@
+import csv
 import glob
 import math
 import os
 import cv2
 import imutils as imutils
-import matplotlib.pyplot as plt
 import numpy as np
 from datetime import datetime
-from PIL import ImageDraw
 
 from app.meth import otsu, move_matrix_right, move_matrix_left, move_matrix_up, logical_conjunction, \
     get_valley_points, get_cond1, get_cond2, get_cond3, draw_circle, draw_points, rotate, draw_roi, cut_roi
 
-path = os.path.join("db\\casia\\small", "*.*")
-# path = os.path.join("db\\casia\\samples_1", "*.*")
-# path = os.path.join("db\\11kHands\\small", "*.*")
-cv_img = []
-path_list = glob.glob(path)
-# print(path_list)
 
+# path = os.path.join("db\\casia\\small", "*.*")
+# path = os.path.join("db\\casia\\sample_10x2_01", "*.*")
+path = os.path.join("db\\casia\\samples_312x2_02", "*.*")
+# path = os.path.join("db\\casia\\samples_3x2", "*.*")
+# path = os.path.join("db\\11kHands\\small", "*.*")
+
+success_counter = 0
+failure_counter = 0
+log = str(path) + '\n-----------------------------\n'
+
+path_list = glob.glob(path)
 
 folder_out = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
 hand_no = 1
-parent_dir = 'D:\\OneDrive\\Informatik\\Semester 6\\BachelorArbeit\\_Mat\\output\\'
-
 
 for file in path_list:
 
-    out = parent_dir + folder_out + '\\' + str(hand_no)
+    out = 'D:\\Datengrab\\BA_workspace\\out\\' + folder_out + '\\' + str(hand_no)
     if not os.path.exists(out):
         os.makedirs(out)
-
 
     # Read in pic & rotate
     image = cv2.imread(file)
     image = cv2.rotate(cv2.imread(file), cv2.cv2.ROTATE_90_CLOCKWISE)
+
+    file_name = os.path.basename(file)
+    file_name = file_name[:-4]
+
+    cv2.imwrite(out + '\\00_' + file_name + '.jpg', image)
+
 
     # Gray
     height, width, _ = image.shape
@@ -188,8 +195,9 @@ for file in path_list:
         if not right_hand:
             angle += 180
 
-        output_image = imutils.rotate(valley_points, angle=angle)
-        image = imutils.rotate(image, angle=angle)
+        output_image = imutils.rotate(valley_points, angle=angle)       # for visualisation
+        image = imutils.rotate(image, angle=angle)                      # for cutting ROI
+
         cv2.circle(output_image, center, 0, (255, 0, 255), 5)  # center point
         a = angle * np.pi / 180
 
@@ -205,12 +213,28 @@ for file in path_list:
         # plt.imshow(roi_vis)
         # plt.show()
 
-        roi = cut_roi(np.copy(img_gray), rotated_coordinates[1], rotated_coordinates[3], right_hand)
-        cv2.imwrite(out + '\\15_ROI.png', roi)
+        roi = cut_roi(np.copy(image), rotated_coordinates[1], rotated_coordinates[3], right_hand)
+        if roi is not None:
+            cv2.imwrite(out + '\\15_ROI__' + str(hand_no) + '__.png', roi)
+        else:
+            failure_counter += 1
+            log += f'Failure drawing ROI at hand {hand_no}  {file_name}\n'
+
+        success_counter += 1
         # plt.imshow(roi)
         # plt.show()
+    else:
+        failure_counter += 1
+        log += f'Failure at hand {hand_no}  {file_name}\n'
 
-    print('-------------next Image-------------')
+    print(f'-------------next hand{hand_no}-------------')
     hand_no += 1
 
 print('fin')
+total = success_counter + failure_counter
+print(f'Total analysed pictures: {total}\nsuccess={success_counter} failures={failure_counter}\n')
+log += '\n\nTotal analysed pictures: {total}\nsuccess={succes_counter} failures={failure_counter}\n'
+
+fp = open('log.txt', 'w')
+fp.write(log)
+fp.close()

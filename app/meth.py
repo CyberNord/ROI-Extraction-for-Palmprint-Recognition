@@ -251,6 +251,10 @@ def cut_roi(img: array, p2: tuple, p4: tuple, right_hand):
     if not right_hand:
         q4 = (p4[0], p4[1] + off)
         q2 = (p2[0], p4[1] + distance + off)
+        if q4[0] < 0 or q4[1] < 0 or q2[0] < 0 or q2[1] < 0:
+            return None
         return img[q4[1]:q2[1], q4[0]:q2[0]]
 
+    if q1[0] < 0 or q1[1] < 0 or q3[0] < 0 or q3[1] < 0:
+        return None
     return img[q1[1]:q3[1], q1[0]:q3[0]]

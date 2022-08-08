@@ -7,11 +7,4 @@
     <orderEntry type="jdk" jdkName="Python 3.10 (prg) (3)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
-  <component name="PyNamespacePackagesService">
-    <option name="namespacePackageFolders">
-      <list>
-        <option value="$MODULE_DIR$/testingground" />
-      </list>
-    </option>
-  </component>
 </module>
