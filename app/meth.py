@@ -259,7 +259,6 @@ def cut_roi(img: array, p2: tuple, p4: tuple, right_hand):
         return None
     return img[q1[1]:q3[1], q1[0]:q3[0]]
 
-
 def is_right_hand(sorted_list: array):
 
     # left

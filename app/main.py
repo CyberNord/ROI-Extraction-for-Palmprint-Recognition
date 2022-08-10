@@ -27,10 +27,6 @@ path_list = glob.glob(path)
 folder_out = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
 hand_no = 1
 
-
-
-
-
 for file in path_list:
 
     out = 'D:\\Datengrab\\BA_workspace\\out\\' + folder_out + '\\' + str(hand_no)
