@@ -258,3 +258,24 @@ def cut_roi(img: array, p2: tuple, p4: tuple, right_hand):
     if q1[0] < 0 or q1[1] < 0 or q3[0] < 0 or q3[1] < 0:
         return None
     return img[q1[1]:q3[1], q1[0]:q3[0]]
+
+
+def is_right_hand(sorted_list: array):
+
+    # left
+    d_x1_x2 = math.dist(sorted_list[0], sorted_list[1])
+    d_x1_x3 = math.dist(sorted_list[0], sorted_list[2])
+    d_x1_x4 = math.dist(sorted_list[0], sorted_list[3])
+    avg_l = (d_x1_x2 + d_x1_x3 + d_x1_x4) / 3
+
+    # right
+    d_x4_x1 = math.dist(sorted_list[3], sorted_list[0])
+    d_x4_x2 = math.dist(sorted_list[3], sorted_list[1])
+    d_x4_x3 = math.dist(sorted_list[3], sorted_list[2])
+    avg_r = (d_x4_x1 + d_x4_x2 + d_x4_x3) / 3
+
+    if avg_r > avg_l:
+        return False
+    else:
+        return True
+

@@ -8,13 +8,14 @@ import numpy as np
 from datetime import datetime
 
 from app.meth import otsu, move_matrix_right, move_matrix_left, move_matrix_up, logical_conjunction, \
-    get_valley_points, get_cond1, get_cond2, get_cond3, draw_circle, draw_points, rotate, draw_roi, cut_roi
+    get_valley_points, get_cond1, get_cond2, get_cond3, draw_circle, draw_points, rotate, draw_roi, \
+    cut_roi, is_right_hand
 
-
-# path = os.path.join("db\\casia\\small", "*.*")
-# path = os.path.join("db\\casia\\sample_10x2_01", "*.*")
-path = os.path.join("db\\casia\\samples_312x2_02", "*.*")
-# path = os.path.join("db\\casia\\samples_3x2", "*.*")
+# path = os.path.join("db\\casia\\small_1", "*.*")
+# path = os.path.join("db\\casia\\sample_2", "*.*")
+# path = os.path.join("db\\casia\\samples_586", "*.*")
+# path = os.path.join("db\\casia\\test_03_alpha", "*.*")
+path = os.path.join("db\\casia\\test_17_alpha", "*.*")
 # path = os.path.join("db\\11kHands\\small", "*.*")
 
 success_counter = 0
@@ -25,6 +26,10 @@ path_list = glob.glob(path)
 
 folder_out = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
 hand_no = 1
+
+
+
+
 
 for file in path_list:
 
@@ -131,7 +136,7 @@ for file in path_list:
 
     itr = 0
     search_c = True
-    while search_c and itr < 5:
+    while search_c and itr < 7:
         itr += 1
 
         contours0, _ = cv2.findContours(valley_blobs.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
@@ -177,10 +182,18 @@ for file in path_list:
         print(f'sorted list: {sorted_list}')
 
         # distinguish between left and right hand
-        right_hand = True
-        if sorted_list[0][1] < sorted_list[3][1]:
-            right_hand = False
+        right_hand = is_right_hand(sorted_list)
+
+        # method proposed by paper
+        # if sorted_list[3][1] > sorted_list[0][1] and sorted_list[3][1] > sorted_list[1][1] and sorted_list[3][1] > sorted_list[2][1]:
+        #     right_hand = False
+        #     sorted_list.reverse()
+        # elif sorted_list[0][1] > sorted_list[1][1] and sorted_list[0][1] > sorted_list[2][1] and sorted_list[0][1] > sorted_list[3][1]:
+        # right_hand = False
+
+        if not right_hand:
             sorted_list.reverse()
+
         valley_points = draw_points(sorted_list, valley_points)
         cv2.imwrite(out + '\\12_valley-points.png', valley_points)
         # plt.imshow(valley_points)
@@ -216,16 +229,15 @@ for file in path_list:
         roi = cut_roi(np.copy(image), rotated_coordinates[1], rotated_coordinates[3], right_hand)
         if roi is not None:
             cv2.imwrite(out + '\\15_ROI__' + str(hand_no) + '__.png', roi)
+            success_counter += 1
         else:
             failure_counter += 1
-            log += f'Failure drawing ROI at hand {hand_no}  {file_name}\n'
-
-        success_counter += 1
+            log += f'Failure drawing ROI (out of bounce) at hand {hand_no}  {file_name}\n'
         # plt.imshow(roi)
         # plt.show()
     else:
         failure_counter += 1
-        log += f'Failure at hand {hand_no}  {file_name}\n'
+        log += f' Not possible to find Centroids at {hand_no}  {file_name}\n'
 
     print(f'-------------next hand{hand_no}-------------')
     hand_no += 1
