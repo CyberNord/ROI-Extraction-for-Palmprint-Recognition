@@ -2,10 +2,12 @@ import math
 
 import cv2
 import numpy as np
+from matplotlib import pyplot as plt
 from numpy import array
 
 from app.constants import OTSU_LOWER, OTSU_HIGHER, PIXEL_OFFSET, PIXEL_OFFSET_NEG, VALLEY_GAP_OFFSET, A_HORIZONTAL, \
-    A_VERTICAL, M_CALCULATION, M_VISIBLE, V_ALPHA, V_BETA, V_GAMMA
+    A_VERTICAL, M_CALCULATION, M_VISIBLE, V_ALPHA, V_BETA, V_GAMMA, OTSU_SKIN_LOWER, OTSU_SKIN_HIGHER, YCrCb_SKIN_LOWER, \
+    YCrCb_SKIN_HIGHER
 
 # Color values (RGB)
 BLACK = (0, 0, 0)
@@ -20,9 +22,61 @@ CYAN = (0, 255, 255)
 
 
 # ### Preprocessing ###
+
 # OTSU
-def otsu(img):
+def otsu(img: array):
     return cv2.threshold(img, OTSU_LOWER, OTSU_HIGHER, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+
+# Masking
+def mask(img_ycrcb: array):
+    lower = np.array(YCrCb_SKIN_LOWER, np.uint8)
+    upper = np.array(YCrCb_SKIN_HIGHER, np.uint8)
+
+    mask = cv2.inRange(img_ycrcb, lower, upper)
+    _, black_and_white = cv2.threshold(mask, 127, 255, 0)
+
+    black_and_white = cv2.dilate(black_and_white, None, iterations=3)
+    black_and_white = cv2.erode(black_and_white, None, iterations=3)
+
+    # plt.imshow(black_and_white, cmap='gray')
+    # plt.show()
+
+    return black_and_white
+
+def cb_cr(img_ycrcb: array, cov: array):
+    # # exp[ -0.5 (cb_cr - mu) sigma^-1 (cb_cr - mu)^T]
+
+    mu = np.mean(img_ycrcb, (0, 1))
+    sig_1 = np.linalg.inv(cov)
+    print(sig_1)
+
+    with np.nditer(img_ycrcb, flags=['multi_index'], op_flags=['writeonly']) as itr:
+        while not itr.finished:
+            a = np.array([
+                (((img_ycrcb[itr.multi_index[0], itr.multi_index[1]])[2]),
+                 ((img_ycrcb[itr.multi_index[0], itr.multi_index[1]])[1]))
+            ])
+            cb_cr_mu = np.subtract(a, (mu[2], mu[1]))
+            cb_cr_mu_t = cb_cr_mu.transpose()
+
+            mul = np.matmul(np.matmul(cb_cr_mu, sig_1),cb_cr_mu_t)
+            exp = np.exp(-0.5 * mul)
+
+            if exp > 0.5:
+                img_ycrcb[itr.multi_index[0], itr.multi_index[1], :] = 255
+            else:
+                img_ycrcb[itr.multi_index[0], itr.multi_index[1], :] = 0
+
+            if itr.multi_index[0] % 200 == 0:
+                print(f'x={itr.multi_index[0]},y={itr.multi_index[1]}')
+            itr.iternext()
+
+        im = cv2.threshold(img_ycrcb, 0, 255, cv2.THRESH_BINARY)[1]
+        plt.imshow(im, cmap='gray')
+        plt.show()
+    return im
+
 
 
 # adds a frame to given picture (causes Errors)
@@ -259,8 +313,8 @@ def cut_roi(img: array, p2: tuple, p4: tuple, right_hand):
         return None
     return img[q1[1]:q3[1], q1[0]:q3[0]]
 
-def is_right_hand(sorted_list: array):
 
+def is_right_hand(sorted_list: array):
     # left
     d_x1_x2 = math.dist(sorted_list[0], sorted_list[1])
     d_x1_x3 = math.dist(sorted_list[0], sorted_list[2])
@@ -279,4 +333,3 @@ def is_right_hand(sorted_list: array):
         return False
     else:
         return True
-

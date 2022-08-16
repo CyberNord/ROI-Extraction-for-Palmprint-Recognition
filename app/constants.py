@@ -1,6 +1,12 @@
 # Otsu Thresholding colors
-OTSU_LOWER = 0          # Black
-OTSU_HIGHER = 255       # White
+OTSU_LOWER = 0                          # Black
+OTSU_HIGHER = 255                       # White
+OTSU_SKIN_LOWER = [0, 45, 100]          # Lower skin range HSV
+OTSU_SKIN_HIGHER = [100, 255, 255]      # Higher skin range HSV
+
+YCrCb_SKIN_LOWER = [30, 138, 80]          # Lower skin range YCrCb
+YCrCb_SKIN_HIGHER = [255, 180, 127]      # Higher skin range YCrCb
+
 
 # Shifting
 PIXEL_OFFSET = 20

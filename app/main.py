@@ -6,24 +6,36 @@ import cv2
 import imutils as imutils
 import numpy as np
 from datetime import datetime
+from PIL import Image, ImageFilter
+from matplotlib import pyplot as plt
 
 from app.meth import otsu, move_matrix_right, move_matrix_left, move_matrix_up, logical_conjunction, \
     get_valley_points, get_cond1, get_cond2, get_cond3, draw_circle, draw_points, rotate, draw_roi, \
-    cut_roi, is_right_hand
+    cut_roi, is_right_hand, mask, cb_cr
 
 # path = os.path.join("db\\casia\\small_1", "*.*")
 # path = os.path.join("db\\casia\\sample_2", "*.*")
 # path = os.path.join("db\\casia\\samples_586", "*.*")
-# path = os.path.join("db\\casia\\test_03_alpha", "*.*")
-path = os.path.join("db\\casia\\test_17_alpha", "*.*")
+path = os.path.join("db\\casia\\test_03_alpha", "*.*")
+# path = os.path.join("db\\casia\\test_17_alpha", "*.*")
 # path = os.path.join("db\\11kHands\\small", "*.*")
+skinpath = os.path.join("db\\skin\\1.png")
+# path = os.path.join("db\\11kHands\\samples_50", "*.*")
+# path = os.path.join("db\\tongji\\small", "*.*")
+# path = os.path.join("db\\tongji\\samples_50", "*.*")
 
+skin_s = cv2.imread(skinpath)
+skin_s = cv2.cvtColor(skin_s, cv2.COLOR_BGR2YCR_CB)
+cov = np.delete(skin_s, 0, 2)
+cov = np.transpose(cov, (0, 2, 1))
+cov = np.reshape(cov, (2, -1))
+cov = np.cov(cov)
+
+mode = 4
 success_counter = 0
 failure_counter = 0
 log = str(path) + '\n-----------------------------\n'
-
 path_list = glob.glob(path)
-
 folder_out = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
 hand_no = 1
 
@@ -33,42 +45,66 @@ for file in path_list:
     if not os.path.exists(out):
         os.makedirs(out)
 
-    # Read in pic & rotate
-    image = cv2.imread(file)
-    image = cv2.rotate(cv2.imread(file), cv2.cv2.ROTATE_90_CLOCKWISE)
+    if mode == 1:
+        # Read in pic & rotate
+        image = cv2.rotate(cv2.imread(file), cv2.cv2.ROTATE_180)
 
+        # Gray
+        ycrcb = cv2.cvtColor(image, cv2.COLOR_BGR2YCR_CB)
+        cv2.imwrite(out + '\\01_YCrCb.png', ycrcb)
+
+        # Masking
+        img_bin = mask(ycrcb)
+        # cv2.imwrite(out + '\\02_img_otsu.png', img_bin)
+
+    elif mode == 2:
+
+        # Read in pic & rotate
+        image = cv2.rotate(cv2.imread(file), cv2.cv2.ROTATE_180)
+
+        # Gray
+        ycrcb = cv2.cvtColor(image, cv2.COLOR_BGR2YCR_CB)
+        cv2.imwrite(out + '\\01_YCrCb.png', ycrcb)
+
+        img_bin = cb_cr(ycrcb, cov)
+        cv2.imwrite(out + '\\02_BW.png', img_bin)
+
+    else:
+        # Read in pic & rotate
+        image = cv2.rotate(cv2.imread(file), cv2.cv2.ROTATE_90_CLOCKWISE)
+
+        # Gray
+        img_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        cv2.imwrite(out + '\\01_gray.png', img_gray)
+
+        # Otsu - CASIA
+        _, img_bin = otsu(img_gray)
+        cv2.imwrite(out + '\\02_img_otsu.png', img_bin)
+
+    # get filename without extension
     file_name = os.path.basename(file)
     file_name = file_name[:-4]
 
-    cv2.imwrite(out + '\\00_' + file_name + '.jpg', image)
-
-
-    # Gray
     height, width, _ = image.shape
     center = (int(width / 2), int(height / 2))
     print(f'height={height},width={width}, center={center}')
-    img_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    cv2.imwrite(out + '\\01_gray.png', img_gray)
-
-    # Otsu
-    ret, img_otsu = otsu(img_gray)
-    cv2.imwrite(out + '\\02_img_otsu.png', img_otsu)
+    cv2.imwrite(out + '\\00_' + file_name + '.jpg', image)
 
     # Valley Point Detection Based on TPDTR
     # roll to right
-    bin_hand_r = move_matrix_right(np.copy(img_otsu))
+    bin_hand_r = move_matrix_right(np.copy(img_bin))
     cv2.imwrite(out + '\\03_bin_hand_r.png', bin_hand_r)
     # plt.imshow(bin_hand_r, cmap='gray')
     # plt.show()
 
     # roll to left
-    bin_hand_l = move_matrix_left(np.copy(img_otsu))
+    bin_hand_l = move_matrix_left(np.copy(img_bin))
     cv2.imwrite(out + '\\04_bin_hand_l.png', bin_hand_l)
     # plt.imshow(bin_hand_l, cmap='gray')
     # plt.show()
 
     # roll to up
-    bin_hand_u = move_matrix_up(np.copy(img_otsu))
+    bin_hand_u = move_matrix_up(np.copy(img_bin))
     cv2.imwrite(out + '\\05_bin_hand_u.png', bin_hand_u)
     # plt.imshow(bin_hand_u, cmap='gray')
     # plt.show()
@@ -80,7 +116,7 @@ for file in path_list:
     # plt.show()
 
     # Translate down & get valley Points
-    valleys = get_valley_points(np.copy(conj), np.copy(img_otsu))
+    valleys = get_valley_points(np.copy(conj), np.copy(img_bin))
     cv2.imwrite(out + '\\07_valleys.png', valleys)
     # plt.imshow(valleys, cmap='gray')
     # plt.show()
@@ -95,9 +131,9 @@ for file in path_list:
             coord = (i, j)
             if valleys[coord] == 255:
                 check[coord] = (255, 0, 0)
-                if get_cond1(img_otsu, coord, height, width):
-                    if get_cond2(img_otsu, coord, height, width):
-                        if get_cond3(img_otsu, coord, height, width):
+                if get_cond1(img_bin, coord, height, width):
+                    if get_cond2(img_bin, coord, height, width):
+                        if get_cond3(img_bin, coord, height, width):
                             check[coord] = (0, 255, 0)
                         else:
                             # counter += 1
