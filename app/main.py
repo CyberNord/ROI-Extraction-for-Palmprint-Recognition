@@ -266,5 +266,5 @@ fp = open(OUTPUT_FOLDER + folder_out + '\\log.txt', 'w')
 fp.write(log)
 fp.close()
 
-# save settings aswell
+# save settings too
 shutil.copyfile('constants.py', OUTPUT_FOLDER + folder_out + '\\settings.txt')
