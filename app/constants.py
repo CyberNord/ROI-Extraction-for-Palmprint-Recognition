@@ -1,8 +1,13 @@
 # User Settings
-ERODE_STEP = False                                       # erodes potential small pixels
-ALTERNATE_HAND_DETECTION = True                         # own method of detecting left/right hand
 OUTPUT_FOLDER = 'D:\\Datengrab\\BA_workspace\\out\\'    # output folder for ROI, log & debug pictures
 SKIN_SAMPLE = "db\\skin\\std2.jpg"                      # own skin sample for Mode 1
+DATABASE = "db\\casia\\test_17_alpha"                   # will analyse all data in folder
+# db\\casia\\test_17_alpha
+# db\\own
+# db\\casia\\test_17_alpha
+
+ERODE_STEP = False                                       # erodes potential small pixels
+ALTERNATE_HAND_DETECTION = True                         # own method of detecting left/right hand
 DEBUG_PICTURES = True                                   # Show steps & visualisation of Algorithm
 
 # rotate the picture

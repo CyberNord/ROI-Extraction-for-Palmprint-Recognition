@@ -1,21 +1,21 @@
 import glob
 import math
 import os
+import shutil
+
 import cv2
 import imutils as imutils
 import numpy as np
 from datetime import datetime
 
-from app.constants import ERODE_STEP, OUTPUT_FOLDER, ALTERNATE_HAND_DETECTION, SKIN_SAMPLE, MODE, ROTATE, DEBUG_PICTURES
+from app.constants import ERODE_STEP, OUTPUT_FOLDER, ALTERNATE_HAND_DETECTION, SKIN_SAMPLE, MODE, ROTATE, \
+    DEBUG_PICTURES, DATABASE
 from app.meth import otsu, move_matrix_right, move_matrix_left, move_matrix_up, logical_conjunction, \
     get_valley_points, get_cond1, get_cond2, get_cond3, draw_circle, draw_points, rotate, draw_roi, \
     cut_roi, is_right_hand, mask, cb_cr
 
-path = os.path.join("db\\casia\\test_17_alpha", "*.*")
-# path = os.path.join("db\\11kHands\\small", "*.*")
-# path = os.path.join("db\\own", "*.*")
+path = os.path.join(DATABASE, "*.*")
 
-# 1: 11k hands Mask, 2: 11k hands cbcr, 3: casia & own
 mode = MODE
 success_counter = 0
 failure_counter = 0
@@ -262,6 +262,9 @@ print(f'Total analysed pictures: {total}\nsuccess={success_counter} failures={fa
 
 # Write Log
 log += f'\n\nTotal analysed pictures: {total}\nsuccess={success_counter} failures={failure_counter}\n'
-fp = open('D:\\Datengrab\\BA_workspace\\out\\' + folder_out + '\\log.txt', 'w')
+fp = open(OUTPUT_FOLDER + folder_out + '\\log.txt', 'w')
 fp.write(log)
 fp.close()
+
+# save settings aswell
+shutil.copyfile('constants.py', OUTPUT_FOLDER + folder_out + '\\settings.txt')
