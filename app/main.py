@@ -6,17 +6,17 @@ import imutils as imutils
 import numpy as np
 from datetime import datetime
 
-from app.constants import ERODE_STEP, OUTPUT_FOLDER, ALTERNATE_HAND_DETECTION, SKIN_SAMPLE
+from app.constants import ERODE_STEP, OUTPUT_FOLDER, ALTERNATE_HAND_DETECTION, SKIN_SAMPLE, MODE, ROTATE, DEBUG_PICTURES
 from app.meth import otsu, move_matrix_right, move_matrix_left, move_matrix_up, logical_conjunction, \
     get_valley_points, get_cond1, get_cond2, get_cond3, draw_circle, draw_points, rotate, draw_roi, \
     cut_roi, is_right_hand, mask, cb_cr
 
-# path = os.path.join("db\\casia\\test_17_alpha", "*.*")
-# path = os.path.join("db\\11kHands\\samples_25", "*.*")
-path = os.path.join("db\\own", "*.*")
+path = os.path.join("db\\casia\\test_17_alpha", "*.*")
+# path = os.path.join("db\\11kHands\\small", "*.*")
+# path = os.path.join("db\\own", "*.*")
 
 # 1: 11k hands Mask, 2: 11k hands cbcr, 3: casia & own
-mode = 3
+mode = MODE
 success_counter = 0
 failure_counter = 0
 log = str(path) + '\n-----------------------------\n'
@@ -29,10 +29,10 @@ if mode == 2:
 
     skin_s = cv2.imread(skin_path)
     skin_s = cv2.cvtColor(skin_s, cv2.COLOR_BGR2YCR_CB)
-    cov = np.delete(skin_s, 0, 2)
-    cov = np.transpose(cov, (0, 2, 1))
-    cov = np.reshape(cov, (2, -1))
-    cov = np.cov(cov)
+    cov_Y = np.delete(skin_s, 0, 2)
+    cov_transpose = np.transpose(cov_Y, (0, 2, 1))
+    cov_reshape = np.reshape(cov_transpose, (2, -1))
+    cov = np.cov(cov_reshape)
 
 for file in path_list:
 
@@ -41,36 +41,54 @@ for file in path_list:
         os.makedirs(out)
 
     # Read in pic & rotate
-    # image = cv2.rotate(cv2.imread(file), cv2.cv2.ROTATE_180)
-    # image = cv2.rotate(cv2.imread(file), cv2.cv2.ROTATE_90_CLOCKWISE)
     image = cv2.imread(file)
 
-    if mode == 1:
-        # Gray
-        ycrcb = cv2.cvtColor(image, cv2.COLOR_BGR2YCR_CB)
-        cv2.imwrite(out + '\\01_YCrCb.png', ycrcb)
+    if ROTATE == 90:
+        image = cv2.rotate(image, cv2.cv2.ROTATE_90_CLOCKWISE)
+    elif ROTATE == 180:
+        image = cv2.rotate(image, cv2.cv2.ROTATE_180)
+    elif ROTATE == 270:
+        image = cv2.rotate(image, cv2.cv2.ROTATE_90_COUNTERCLOCKWISE)
+    # else no rotation
 
-        # Masking
+    if mode == 1:
+        # 01 Gray - Colorspace
+        ycrcb = cv2.cvtColor(image, cv2.COLOR_BGR2YCR_CB)
+
+        # 02 Masking
         img_bin = mask(ycrcb)
-        # cv2.imwrite(out + '\\02_img_otsu.png', img_bin)
+
+        if DEBUG_PICTURES:
+            cv2.imwrite(out + '\\01_YCrCb.png', ycrcb)
+            cv2.imwrite(out + '\\02_img_otsu.png', img_bin)
 
     elif mode == 2:
-
-        # Gray
+        # 01 YCrCb - Colorspace
         ycrcb = cv2.cvtColor(image, cv2.COLOR_BGR2YCR_CB)
-        cv2.imwrite(out + '\\01_YCrCb.png', ycrcb)
 
-        img_bin = cb_cr(ycrcb, cov)
-        cv2.imwrite(out + '\\02_BW.png', img_bin)
+        # 02 Binary YCrCb
+        img_skin = cb_cr(ycrcb, cov)
+
+        # 02 Translate to real BW - Colorspace
+        img_bin = cv2.cvtColor(img_skin, cv2.COLOR_YCrCb2BGR)
+        img_bin = cv2.cvtColor(img_bin, cv2.COLOR_BGR2GRAY)
+        _, img_bin = otsu(img_bin)
+
+        if DEBUG_PICTURES:
+            cv2.imwrite(out + '\\01_YCrCb.png', ycrcb)
+            cv2.imwrite(out + '\\02_1_BW_YCrCb.png', img_skin)
+            cv2.imwrite(out + '\\02_2_BW.png', img_bin)
 
     else:
-        # Gray
+        # 01 Gray - Colorspace
         img_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        cv2.imwrite(out + '\\01_gray.png', img_gray)
 
-        # Otsu - CASIA
+        # 02 Otsu - Algorithm
         _, img_bin = otsu(img_gray)
-        cv2.imwrite(out + '\\02_img_otsu.png', img_bin)
+
+        if DEBUG_PICTURES:
+            cv2.imwrite(out + '\\01_gray.png', img_gray)
+            cv2.imwrite(out + '\\02_img_otsu.png', img_bin)
 
     # get filename without extension
     file_name = os.path.basename(file)
@@ -78,29 +96,33 @@ for file in path_list:
 
     height, width, _ = image.shape
     center = (int(width / 2), int(height / 2))
-    print(f'height={height},width={width}, center={center}')
-    cv2.imwrite(out + '\\00_' + file_name + '.jpg', image)
+
+    if DEBUG_PICTURES:
+        print(f'height={height},width={width}, center={center}')
+        cv2.imwrite(out + '\\00_' + file_name + '.jpg', image)
 
     # Valley Point Detection Based on TPDTR
-    # roll to right
+    # 03 roll to right
     bin_hand_r = move_matrix_right(np.copy(img_bin))
-    cv2.imwrite(out + '\\03_bin_hand_r.png', bin_hand_r)
 
-    # roll to left
+    # 04 roll to left
     bin_hand_l = move_matrix_left(np.copy(img_bin))
-    cv2.imwrite(out + '\\04_bin_hand_l.png', bin_hand_l)
 
-    # roll to up
+    # 05 roll to up
     bin_hand_u = move_matrix_up(np.copy(img_bin))
-    cv2.imwrite(out + '\\05_bin_hand_u.png', bin_hand_u)
 
-    # logical conjunction
-    conj = logical_conjunction(bin_hand_l, bin_hand_r, bin_hand_u)
-    cv2.imwrite(out + '\\06_Conjuction.png', conj)
+    # 06 logical conjunction
+    conj = logical_conjunction(np.copy(bin_hand_l), np.copy(bin_hand_r), np.copy(bin_hand_u))
 
-    # Translate down & get valley Points
+    # 07 Translate down & get valley Points
     valleys = get_valley_points(np.copy(conj), np.copy(img_bin))
-    cv2.imwrite(out + '\\07_valleys.png', valleys)
+
+    if DEBUG_PICTURES:
+        cv2.imwrite(out + '\\03_bin_hand_r.png', bin_hand_r)
+        cv2.imwrite(out + '\\04_bin_hand_l.png', bin_hand_l)
+        cv2.imwrite(out + '\\05_bin_hand_u.png', bin_hand_u)
+        cv2.imwrite(out + '\\06_Conjunction.png', conj)
+        cv2.imwrite(out + '\\07_valleys.png', valleys)
 
     valley_blobs = np.copy(valleys)
     check = np.copy(image)
@@ -120,11 +142,12 @@ for file in path_list:
                 else:
                     valley_blobs[coord] = 0
 
-    # visualizes the pixels that were removed & the one that stay
-    cv2.imwrite(out + '\\08_Cut-out-Visualised.png', check)
+    if DEBUG_PICTURES:
+        # 08 visualizes the pixels that were removed & the one that stay
+        cv2.imwrite(out + '\\08_Cut-out-Visualised.png', check)
 
-    # valley blobs
-    cv2.imwrite(out + '\\09_Valley-blobs.png', valley_blobs)
+        # 09 valley blobs
+        cv2.imwrite(out + '\\09_Valley-blobs.png', valley_blobs)
 
     moments = []
     centroids = []
@@ -154,7 +177,9 @@ for file in path_list:
             moments = []
             centroids = []
             valley_blobs = cv2.dilate(valley_blobs, None, iterations=1)
-            cv2.imwrite(out + '\\10_Valley-blobs-dilated.png', valley_blobs)
+
+            if DEBUG_PICTURES:
+                cv2.imwrite(out + '\\10_Valley-blobs-dilated.png', valley_blobs)
 
     print(f"centroids={centroids} - iterations:{itr}")
 
@@ -165,7 +190,8 @@ for file in path_list:
         for c in centroids:
             valley_centroids = draw_circle(c, valley_centroids)
 
-        cv2.imwrite(out + '\\11_valley_centroids.png', valley_centroids)
+        if DEBUG_PICTURES:
+            cv2.imwrite(out + '\\11_valley_centroids.png', valley_centroids)
 
         # sort list by y-value
         sorted_list = sorted(centroids, key=lambda y: y[0])
@@ -186,8 +212,11 @@ for file in path_list:
         if not right_hand:
             sorted_list.reverse()
 
+        # 12 show valley points
         valley_points = draw_points(sorted_list, valley_points)
-        cv2.imwrite(out + '\\12_valley-points.png', valley_points)
+
+        if DEBUG_PICTURES:
+            cv2.imwrite(out + '\\12_valley-points.png', valley_points)
 
         # x4-x2,y4-y2
         angle = math.degrees(math.atan2(sorted_list[3][1] - sorted_list[1][1], sorted_list[3][0] - sorted_list[1][0]))
@@ -202,12 +231,16 @@ for file in path_list:
         a = angle * np.pi / 180
 
         rotated_coordinates = rotate(center, sorted_list, a)
+
+        # 13 draw points (again) in rotated image
         output_image = draw_points(rotated_coordinates, output_image, (255, 250, 0), False)
 
-        cv2.imwrite(out + '\\13_Rotate-image.png', output_image)
-
+        # 14 Visualised ROI
         roi_vis = draw_roi(np.copy(output_image), rotated_coordinates[1], rotated_coordinates[3], True)
-        cv2.imwrite(out + '\\14_ROI_Visualized.png', roi_vis)
+
+        if DEBUG_PICTURES:
+            cv2.imwrite(out + '\\13_Rotate-image.png', output_image)
+            cv2.imwrite(out + '\\14_ROI_Visualized.png', roi_vis)
 
         roi = cut_roi(np.copy(image), rotated_coordinates[1], rotated_coordinates[3], right_hand)
         if roi is not None:

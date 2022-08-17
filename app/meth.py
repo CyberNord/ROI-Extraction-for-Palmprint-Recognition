@@ -9,6 +9,7 @@ from app.constants import OTSU_LOWER, OTSU_HIGHER, PIXEL_OFFSET, PIXEL_OFFSET_NE
     V_ALPHA, V_BETA, V_GAMMA, YCrCb_SKIN_LOWER, YCrCb_SKIN_HIGHER
 
 # Color values (BGR)
+
 BLACK = (0, 0, 0)
 DARK = (1, 1, 1)
 WHITE = (255, 255, 255)
@@ -54,9 +55,10 @@ def cb_cr(img_ycrcb: array, cov: array):
     # # exp[ -0.5 (cb_cr - mu) sigma^-1 (cb_cr - mu)^T]
 
     mu = np.mean(img_ycrcb, (0, 1))
-    # cov = np.array([[1,2],[3,4]])
+    # cov = np.array([[1,2],[3,4]])     # dummy cov for testing purposes only
     sig_1 = np.linalg.inv(cov)
 
+    print('Processing picture:',end=' ')
     with np.nditer(img_ycrcb, flags=['multi_index'], op_flags=['readwrite']) as itr:
         while not itr.finished:
             a = np.array([
@@ -69,21 +71,20 @@ def cb_cr(img_ycrcb: array, cov: array):
             mul = np.matmul(np.matmul(cb_cr_mu, sig_1), cb_cr_mu_t)
             exp = np.exp(-0.5 * mul)
 
-            if exp > 0.85:
-                # print(exp)
+            if exp > 0.50:
                 img_ycrcb[itr.multi_index[0], itr.multi_index[1], :] = 255
             else:
                 img_ycrcb[itr.multi_index[0], itr.multi_index[1], :] = 0
-                # print(exp)
             #
-            if itr.multi_index[0] % 200 == 0:
-                print(f'x={itr.multi_index[0]},y={itr.multi_index[1]}')
+            if itr.multi_index[0] % 200 == 0 and itr.multi_index[1] % 500 == 0:
+                print('#', end='')
             itr.iternext()
 
+        print(' ,done')
         plt.imshow(img_ycrcb, cmap='gray')
         plt.show()
 
-    return cv2.threshold(img_ycrcb, 0, 255, cv2.THRESH_BINARY)[1][1]
+    return img_ycrcb
 
 
 # adds a frame to given picture (causes Errors - not in Use anymore)

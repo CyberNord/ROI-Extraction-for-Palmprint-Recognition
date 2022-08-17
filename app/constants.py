@@ -1,10 +1,20 @@
 # User Settings
-ERODE_STEP = True                                       # erodes potential small pixels
+ERODE_STEP = False                                       # erodes potential small pixels
 ALTERNATE_HAND_DETECTION = True                         # own method of detecting left/right hand
 OUTPUT_FOLDER = 'D:\\Datengrab\\BA_workspace\\out\\'    # output folder for ROI, log & debug pictures
 SKIN_SAMPLE = "db\\skin\\std2.jpg"                      # own skin sample for Mode 1
+DEBUG_PICTURES = True                                   # Show steps & visualisation of Algorithm
 
-# Advanced Settings
+# rotate the picture
+ROTATE = 90                                              # 0 , 90 , 180, 270  (all clockwise)
+
+# Mode/Method for translating Greyscale/Color picture into binary form
+MODE = 3
+# 1: Skin sample comparison in CbCr Colorspace, time consuming 1-2 min/pic
+# 2: YCbCr masking (standard values), fast
+# 3: OTSU (Standard), fast
+
+# Advanced Settings (!)
 
 # Otsu Thresholding colors              (Mode 3)
 OTSU_LOWER = 0                          # Black
