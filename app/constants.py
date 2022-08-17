@@ -15,7 +15,7 @@ ROTATE = 90                                              # 0 , 90 , 180, 270  (a
 
 # Mode/Method for translating Greyscale/Color picture into binary form
 MODE = 3
-# 1: Skin sample comparison in CbCr Colorspace, time consuming 1-2 min/pic
+# 1: Skin sample comparison in CbCr Colorspace, time-consuming 1-2 min/pic
 # 2: YCbCr masking (standard values), fast
 # 3: OTSU (Standard), fast
 

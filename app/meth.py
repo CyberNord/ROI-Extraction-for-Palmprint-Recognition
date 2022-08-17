@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 from numpy import array
 
 from app.constants import OTSU_LOWER, OTSU_HIGHER, PIXEL_OFFSET, PIXEL_OFFSET_NEG, VALLEY_GAP_OFFSET, \
-    V_ALPHA, V_BETA, V_GAMMA, YCrCb_SKIN_LOWER, YCrCb_SKIN_HIGHER
+    V_ALPHA, V_BETA, V_GAMMA, YCrCb_SKIN_LOWER, YCrCb_SKIN_HIGHER, DEBUG_PICTURES
 
 # Color values (BGR)
 
@@ -85,20 +85,6 @@ def cb_cr(img_ycrcb: array, cov: array):
         plt.show()
 
     return img_ycrcb
-
-
-# adds a frame to given picture (causes Errors - not in Use anymore)
-# the offset is chosen to match the main shifting offset
-def add_frame(img, value: array):
-    return cv2.copyMakeBorder(
-        img,
-        top=PIXEL_OFFSET,
-        bottom=PIXEL_OFFSET,
-        left=PIXEL_OFFSET,
-        right=PIXEL_OFFSET,
-        borderType=cv2.BORDER_CONSTANT,
-        value=value
-    )
 
 
 # ### Valley Point Detection ###
@@ -251,7 +237,7 @@ def draw_points(centroids: array, img: array, color=RED, debug=True):
         cv2.circle(img, c, 0, color, 6)
         if debug:
             img = cv2.putText(img, f'P{p}', (x, y), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
-            if p == 2 or p == 4:
+            if (p == 2 or p == 4) and DEBUG_PICTURES:
                 print(f'coordinates of p{p}:({c}) at array position centroids[{p - 1}]')
         p += 1
     return img

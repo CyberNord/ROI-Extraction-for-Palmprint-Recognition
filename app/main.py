@@ -212,7 +212,6 @@ for file in path_list:
 
         # sort list by y-value
         sorted_list = sorted(centroids, key=lambda y: y[0])
-        print(f'Valley Coordinates: {sorted_list}')
 
         # distinguish between left and right hand
         if ALTERNATE_HAND_DETECTION:
@@ -261,16 +260,19 @@ for file in path_list:
 
         roi = cut_roi(np.copy(image), rotated_coordinates[1], rotated_coordinates[3], right_hand)
         if roi is not None:
-            cv2.imwrite(out + '\\15_ROI__' + str(hand_no) + '__.png', roi)
+            cv2.imwrite(out + '\\15_ROI__' + file_name + '__.png', roi)
+            print(f'successful extracted ROI from {file_name}.*')
             success_counter += 1
         else:
             failure_counter += 1
             log += f'Failure drawing ROI (out of bounce) at hand {hand_no}  {file_name}\n'
+            print(f'Failure drawing ROI (out of bounce) at hand {hand_no}  {file_name}\n')
     else:
         failure_counter += 1
-        log += f' Not possible to find Centroids at {hand_no}  {file_name}\n'
+        log += f'Not possible to find Centroids at {hand_no}  {file_name}\n'
+        print(f'Not possible to find Centroids at {hand_no}  {file_name}\n')
 
-    print(f'-------------next hand{hand_no}-------------')
+    print(f'\n------------- next hand {hand_no} -------------')
     hand_no += 1
 
 print('fin')
