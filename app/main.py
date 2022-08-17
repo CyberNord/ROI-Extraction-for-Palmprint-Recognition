@@ -14,19 +14,21 @@ from app.meth import otsu, move_matrix_right, move_matrix_left, move_matrix_up, 
     get_valley_points, get_cond1, get_cond2, get_cond3, draw_circle, draw_points, rotate, draw_roi, \
     cut_roi, is_right_hand, mask, cb_cr
 
-path = os.path.join(DATABASE, "*.*")
-
+# variables
 mode = MODE
 success_counter = 0
 failure_counter = 0
+hand_no = 1
+cov = None
+
+path = os.path.join(DATABASE, "*.*")
 log = str(path) + '\n-----------------------------\n'
 path_list = glob.glob(path)
 folder_out = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
-hand_no = 1
 
+# generating skin sample cov Matrix for Mode 2
 if mode == 2:
     skin_path = os.path.join(SKIN_SAMPLE)
-
     skin_s = cv2.imread(skin_path)
     skin_s = cv2.cvtColor(skin_s, cv2.COLOR_BGR2YCR_CB)
     cov_Y = np.delete(skin_s, 0, 2)
@@ -34,6 +36,7 @@ if mode == 2:
     cov_reshape = np.reshape(cov_transpose, (2, -1))
     cov = np.cov(cov_reshape)
 
+# main loop for every picture in the database folder
 for file in path_list:
 
     out = OUTPUT_FOLDER + folder_out + '\\' + str(hand_no)
@@ -51,6 +54,10 @@ for file in path_list:
         image = cv2.rotate(image, cv2.cv2.ROTATE_90_COUNTERCLOCKWISE)
     # else no rotation
 
+    # --------------------------------------------------------------
+    # Generating Binary Image
+
+    # ... with masking in YCrCb - Colorspace
     if mode == 1:
         # 01 Gray - Colorspace
         ycrcb = cv2.cvtColor(image, cv2.COLOR_BGR2YCR_CB)
@@ -62,6 +69,7 @@ for file in path_list:
             cv2.imwrite(out + '\\01_YCrCb.png', ycrcb)
             cv2.imwrite(out + '\\02_img_otsu.png', img_bin)
 
+    # ... with custom skin sample comparison in CrCb - Colorspace
     elif mode == 2:
         # 01 YCrCb - Colorspace
         ycrcb = cv2.cvtColor(image, cv2.COLOR_BGR2YCR_CB)
@@ -79,6 +87,7 @@ for file in path_list:
             cv2.imwrite(out + '\\02_1_BW_YCrCb.png', img_skin)
             cv2.imwrite(out + '\\02_2_BW.png', img_bin)
 
+    # ... with Otsu - Algorithm
     else:
         # 01 Gray - Colorspace
         img_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -101,7 +110,9 @@ for file in path_list:
         print(f'height={height},width={width}, center={center}')
         cv2.imwrite(out + '\\00_' + file_name + '.jpg', image)
 
+    # --------------------------------------------------------------
     # Valley Point Detection Based on TPDTR
+
     # 03 roll to right
     bin_hand_r = move_matrix_right(np.copy(img_bin))
 
@@ -149,6 +160,9 @@ for file in path_list:
         # 09 valley blobs
         cv2.imwrite(out + '\\09_Valley-blobs.png', valley_blobs)
 
+    # --------------------------------------------------------------
+    # find the four centroids
+
     moments = []
     centroids = []
 
@@ -182,6 +196,9 @@ for file in path_list:
                 cv2.imwrite(out + '\\10_Valley-blobs-dilated.png', valley_blobs)
 
     print(f"centroids={centroids} - iterations:{itr}")
+
+    # --------------------------------------------------------------
+    # Roi Extraction
 
     if len(centroids) == 4:
 
