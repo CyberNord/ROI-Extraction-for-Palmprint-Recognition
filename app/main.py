@@ -6,32 +6,18 @@ import cv2
 import imutils as imutils
 import numpy as np
 from datetime import datetime
-from PIL import Image, ImageFilter
-from matplotlib import pyplot as plt
 
+from app.constants import ERODE_STEP, OUTPUT_FOLDER, ALTERNATE_HAND_DETECTION, SKIN_SAMPLE
 from app.meth import otsu, move_matrix_right, move_matrix_left, move_matrix_up, logical_conjunction, \
     get_valley_points, get_cond1, get_cond2, get_cond3, draw_circle, draw_points, rotate, draw_roi, \
     cut_roi, is_right_hand, mask, cb_cr
 
-# path = os.path.join("db\\casia\\small_1", "*.*")
-# path = os.path.join("db\\casia\\sample_2", "*.*")
-# path = os.path.join("db\\casia\\samples_586", "*.*")
-path = os.path.join("db\\casia\\test_03_alpha", "*.*")
 # path = os.path.join("db\\casia\\test_17_alpha", "*.*")
-# path = os.path.join("db\\11kHands\\small", "*.*")
-skinpath = os.path.join("db\\skin\\1.png")
-# path = os.path.join("db\\11kHands\\samples_50", "*.*")
-# path = os.path.join("db\\tongji\\small", "*.*")
-# path = os.path.join("db\\tongji\\samples_50", "*.*")
+# path = os.path.join("db\\11kHands\\samples_25", "*.*")
+path = os.path.join("db\\own", "*.*")
 
-skin_s = cv2.imread(skinpath)
-skin_s = cv2.cvtColor(skin_s, cv2.COLOR_BGR2YCR_CB)
-cov = np.delete(skin_s, 0, 2)
-cov = np.transpose(cov, (0, 2, 1))
-cov = np.reshape(cov, (2, -1))
-cov = np.cov(cov)
-
-mode = 4
+# 1: 11k hands Mask, 2: 11k hands cbcr, 3: casia & own
+mode = 3
 success_counter = 0
 failure_counter = 0
 log = str(path) + '\n-----------------------------\n'
@@ -39,16 +25,28 @@ path_list = glob.glob(path)
 folder_out = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
 hand_no = 1
 
+if mode == 2:
+    skin_path = os.path.join(SKIN_SAMPLE)
+
+    skin_s = cv2.imread(skin_path)
+    skin_s = cv2.cvtColor(skin_s, cv2.COLOR_BGR2YCR_CB)
+    cov = np.delete(skin_s, 0, 2)
+    cov = np.transpose(cov, (0, 2, 1))
+    cov = np.reshape(cov, (2, -1))
+    cov = np.cov(cov)
+
 for file in path_list:
 
-    out = 'D:\\Datengrab\\BA_workspace\\out\\' + folder_out + '\\' + str(hand_no)
+    out = OUTPUT_FOLDER + folder_out + '\\' + str(hand_no)
     if not os.path.exists(out):
         os.makedirs(out)
 
-    if mode == 1:
-        # Read in pic & rotate
-        image = cv2.rotate(cv2.imread(file), cv2.cv2.ROTATE_180)
+    # Read in pic & rotate
+    # image = cv2.rotate(cv2.imread(file), cv2.cv2.ROTATE_180)
+    # image = cv2.rotate(cv2.imread(file), cv2.cv2.ROTATE_90_CLOCKWISE)
+    image = cv2.imread(file)
 
+    if mode == 1:
         # Gray
         ycrcb = cv2.cvtColor(image, cv2.COLOR_BGR2YCR_CB)
         cv2.imwrite(out + '\\01_YCrCb.png', ycrcb)
@@ -59,9 +57,6 @@ for file in path_list:
 
     elif mode == 2:
 
-        # Read in pic & rotate
-        image = cv2.rotate(cv2.imread(file), cv2.cv2.ROTATE_180)
-
         # Gray
         ycrcb = cv2.cvtColor(image, cv2.COLOR_BGR2YCR_CB)
         cv2.imwrite(out + '\\01_YCrCb.png', ycrcb)
@@ -70,9 +65,6 @@ for file in path_list:
         cv2.imwrite(out + '\\02_BW.png', img_bin)
 
     else:
-        # Read in pic & rotate
-        image = cv2.rotate(cv2.imread(file), cv2.cv2.ROTATE_90_CLOCKWISE)
-
         # Gray
         img_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         cv2.imwrite(out + '\\01_gray.png', img_gray)
@@ -94,38 +86,25 @@ for file in path_list:
     # roll to right
     bin_hand_r = move_matrix_right(np.copy(img_bin))
     cv2.imwrite(out + '\\03_bin_hand_r.png', bin_hand_r)
-    # plt.imshow(bin_hand_r, cmap='gray')
-    # plt.show()
 
     # roll to left
     bin_hand_l = move_matrix_left(np.copy(img_bin))
     cv2.imwrite(out + '\\04_bin_hand_l.png', bin_hand_l)
-    # plt.imshow(bin_hand_l, cmap='gray')
-    # plt.show()
 
     # roll to up
     bin_hand_u = move_matrix_up(np.copy(img_bin))
     cv2.imwrite(out + '\\05_bin_hand_u.png', bin_hand_u)
-    # plt.imshow(bin_hand_u, cmap='gray')
-    # plt.show()
 
     # logical conjunction
     conj = logical_conjunction(bin_hand_l, bin_hand_r, bin_hand_u)
     cv2.imwrite(out + '\\06_Conjuction.png', conj)
-    # plt.imshow(conj, cmap='gray')
-    # plt.show()
 
     # Translate down & get valley Points
     valleys = get_valley_points(np.copy(conj), np.copy(img_bin))
     cv2.imwrite(out + '\\07_valleys.png', valleys)
-    # plt.imshow(valleys, cmap='gray')
-    # plt.show()
 
     valley_blobs = np.copy(valleys)
     check = np.copy(image)
-    # plt.imshow(valleys, cmap='gray')
-    # plt.show()
-    counter = 0
     for i in range(len(valleys)):
         for j in range(len(valleys[i])):
             coord = (i, j)
@@ -136,32 +115,17 @@ for file in path_list:
                         if get_cond3(img_bin, coord, height, width):
                             check[coord] = (0, 255, 0)
                         else:
-                            # counter += 1
-                            # print(f'pre:{valley_blobs[coord]}')
                             valley_blobs[coord] = 0
-                            # print(f'past:{valley_blobs[coord]}')
                     else:
-                        # counter += 1
-                        # print(f'pre:{valley_blobs[coord]}')
                         valley_blobs[coord] = 0
-                        # print(f'past:{valley_blobs[coord]}')
                 else:
-                    # counter += 1
-                    # print(f'pre:{valley_blobs[coord]}')
                     valley_blobs[coord] = 0
-                    # print(f'past:{valley_blobs[coord]}')
-
-    # print(counter)
 
     # visualizes the pixels that were removed & the one that stay
     cv2.imwrite(out + '\\08_Cut-out-Visualised.png', check)
-    # plt.imshow(check)
-    # plt.show()
 
     # valley blobs
     cv2.imwrite(out + '\\09_Valley-blobs.png', valley_blobs)
-    # plt.imshow(valley_blobs, cmap='gray')
-    # plt.show()
 
     moments = []
     centroids = []
@@ -175,7 +139,6 @@ for file in path_list:
 
         for cnt in contours0:
             moments.append(cv2.moments(cnt))
-            # print("moments= " + str(moments))
 
         for m in moments:
             divisor: float
@@ -187,14 +150,12 @@ for file in path_list:
         if len(centroids) == 4:
             search_c = False
         else:
-            # if itr == 1:
-            #     valley_blobs = cv2.erode(valley_blobs, None, iterations=1)
+            if itr == 1 and ERODE_STEP:
+                valley_blobs = cv2.erode(valley_blobs, None, iterations=1)
             moments = []
             centroids = []
             valley_blobs = cv2.dilate(valley_blobs, None, iterations=1)
             cv2.imwrite(out + '\\10_Valley-blobs-dilated.png', valley_blobs)
-            # plt.imshow(valley_blobs)
-            # plt.show()
 
     print(f"centroids={centroids} - iterations:{itr}")
 
@@ -206,36 +167,31 @@ for file in path_list:
             valley_centroids = draw_circle(c, valley_centroids)
 
         cv2.imwrite(out + '\\11_valley_centroids.png', valley_centroids)
-        # plt.imshow(valley_centroids)
-        # plt.show()
 
         # sort list by y-value
         sorted_list = sorted(centroids, key=lambda y: y[0])
         print(f'sorted list: {sorted_list}')
 
         # distinguish between left and right hand
-        right_hand = is_right_hand(sorted_list)
-
-        # method proposed by paper
-        # if sorted_list[3][1] > sorted_list[0][1] and sorted_list[3][1] > sorted_list[1][1] and sorted_list[3][1] > sorted_list[2][1]:
-        #     right_hand = False
-        #     sorted_list.reverse()
-        # elif sorted_list[0][1] > sorted_list[1][1] and sorted_list[0][1] > sorted_list[2][1] and sorted_list[0][1] > sorted_list[3][1]:
-        # right_hand = False
+        if ALTERNATE_HAND_DETECTION:
+            right_hand = is_right_hand(sorted_list)
+        else:
+            # method proposed by paper
+            right_hand = False
+            if sorted_list[3][1] > sorted_list[0][1] and sorted_list[3][1] > sorted_list[1][1] and sorted_list[3][1] > sorted_list[2][1]:
+                right_hand = False
+                sorted_list.reverse()
+            elif sorted_list[0][1] > sorted_list[1][1] and sorted_list[0][1] > sorted_list[2][1] and sorted_list[0][1] > sorted_list[3][1]:
+                right_hand = False
 
         if not right_hand:
             sorted_list.reverse()
 
         valley_points = draw_points(sorted_list, valley_points)
         cv2.imwrite(out + '\\12_valley-points.png', valley_points)
-        # plt.imshow(valley_points)
-        # plt.show()
 
         # x4-x2,y4-y2
         angle = math.degrees(math.atan2(sorted_list[3][1] - sorted_list[1][1], sorted_list[3][0] - sorted_list[1][0]))
-
-        # slope = int(get_slope(sorted_list[1], sorted_list[3]))
-        # distance = int(math.dist(sorted_list[1], sorted_list[3]))
 
         if not right_hand:
             angle += 180
@@ -243,20 +199,16 @@ for file in path_list:
         output_image = imutils.rotate(valley_points, angle=angle)       # for visualisation
         image = imutils.rotate(image, angle=angle)                      # for cutting ROI
 
-        cv2.circle(output_image, center, 0, (255, 0, 255), 5)  # center point
+        cv2.circle(output_image, center, 0, (255, 0, 255), 5)           # center point
         a = angle * np.pi / 180
 
         rotated_coordinates = rotate(center, sorted_list, a)
         output_image = draw_points(rotated_coordinates, output_image, (255, 250, 0), False)
 
         cv2.imwrite(out + '\\13_Rotate-image.png', output_image)
-        # plt.imshow(output_image)
-        # plt.show()
 
         roi_vis = draw_roi(np.copy(output_image), rotated_coordinates[1], rotated_coordinates[3], True)
         cv2.imwrite(out + '\\14_ROI_Visualized.png', roi_vis)
-        # plt.imshow(roi_vis)
-        # plt.show()
 
         roi = cut_roi(np.copy(image), rotated_coordinates[1], rotated_coordinates[3], right_hand)
         if roi is not None:
@@ -265,8 +217,6 @@ for file in path_list:
         else:
             failure_counter += 1
             log += f'Failure drawing ROI (out of bounce) at hand {hand_no}  {file_name}\n'
-        # plt.imshow(roi)
-        # plt.show()
     else:
         failure_counter += 1
         log += f' Not possible to find Centroids at {hand_no}  {file_name}\n'
@@ -277,8 +227,8 @@ for file in path_list:
 print('fin')
 total = success_counter + failure_counter
 print(f'Total analysed pictures: {total}\nsuccess={success_counter} failures={failure_counter}\n')
-log += '\n\nTotal analysed pictures: {total}\nsuccess={succes_counter} failures={failure_counter}\n'
+log += f'\n\nTotal analysed pictures: {total}\nsuccess={success_counter} failures={failure_counter}\n'
 
-fp = open('log.txt', 'w')
+fp = open('D:\\Datengrab\\BA_workspace\\out\\' + folder_out + '\\log.txt', 'w')
 fp.write(log)
 fp.close()

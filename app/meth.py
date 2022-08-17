@@ -5,11 +5,10 @@ import numpy as np
 from matplotlib import pyplot as plt
 from numpy import array
 
-from app.constants import OTSU_LOWER, OTSU_HIGHER, PIXEL_OFFSET, PIXEL_OFFSET_NEG, VALLEY_GAP_OFFSET, A_HORIZONTAL, \
-    A_VERTICAL, M_CALCULATION, M_VISIBLE, V_ALPHA, V_BETA, V_GAMMA, OTSU_SKIN_LOWER, OTSU_SKIN_HIGHER, YCrCb_SKIN_LOWER, \
-    YCrCb_SKIN_HIGHER
+from app.constants import OTSU_LOWER, OTSU_HIGHER, PIXEL_OFFSET, PIXEL_OFFSET_NEG, VALLEY_GAP_OFFSET, \
+    V_ALPHA, V_BETA, V_GAMMA, YCrCb_SKIN_LOWER, YCrCb_SKIN_HIGHER
 
-# Color values (RGB)
+# Color values (BGR)
 BLACK = (0, 0, 0)
 DARK = (1, 1, 1)
 WHITE = (255, 255, 255)
@@ -20,15 +19,23 @@ PINK = (255, 0, 255)
 YELLOW = (255, 255, 0)
 CYAN = (0, 255, 255)
 
+# Axis
+A_HORIZONTAL = 1
+A_VERTICAL = 0
+
+# Matrix values
+M_VISIBLE = 255
+M_CALCULATION = 1
+
 
 # ### Preprocessing ###
 
-# OTSU
+# OTSU (Mode 3)
 def otsu(img: array):
     return cv2.threshold(img, OTSU_LOWER, OTSU_HIGHER, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
 
-# Masking
+# Masking (Mode 2)
 def mask(img_ycrcb: array):
     lower = np.array(YCrCb_SKIN_LOWER, np.uint8)
     upper = np.array(YCrCb_SKIN_HIGHER, np.uint8)
@@ -39,19 +46,18 @@ def mask(img_ycrcb: array):
     black_and_white = cv2.dilate(black_and_white, None, iterations=3)
     black_and_white = cv2.erode(black_and_white, None, iterations=3)
 
-    # plt.imshow(black_and_white, cmap='gray')
-    # plt.show()
-
     return black_and_white
 
+
+# cb_cr  (Mode 1)
 def cb_cr(img_ycrcb: array, cov: array):
     # # exp[ -0.5 (cb_cr - mu) sigma^-1 (cb_cr - mu)^T]
 
     mu = np.mean(img_ycrcb, (0, 1))
+    # cov = np.array([[1,2],[3,4]])
     sig_1 = np.linalg.inv(cov)
-    print(sig_1)
 
-    with np.nditer(img_ycrcb, flags=['multi_index'], op_flags=['writeonly']) as itr:
+    with np.nditer(img_ycrcb, flags=['multi_index'], op_flags=['readwrite']) as itr:
         while not itr.finished:
             a = np.array([
                 (((img_ycrcb[itr.multi_index[0], itr.multi_index[1]])[2]),
@@ -60,26 +66,27 @@ def cb_cr(img_ycrcb: array, cov: array):
             cb_cr_mu = np.subtract(a, (mu[2], mu[1]))
             cb_cr_mu_t = cb_cr_mu.transpose()
 
-            mul = np.matmul(np.matmul(cb_cr_mu, sig_1),cb_cr_mu_t)
+            mul = np.matmul(np.matmul(cb_cr_mu, sig_1), cb_cr_mu_t)
             exp = np.exp(-0.5 * mul)
 
-            if exp > 0.5:
+            if exp > 0.85:
+                # print(exp)
                 img_ycrcb[itr.multi_index[0], itr.multi_index[1], :] = 255
             else:
                 img_ycrcb[itr.multi_index[0], itr.multi_index[1], :] = 0
-
+                # print(exp)
+            #
             if itr.multi_index[0] % 200 == 0:
                 print(f'x={itr.multi_index[0]},y={itr.multi_index[1]}')
             itr.iternext()
 
-        im = cv2.threshold(img_ycrcb, 0, 255, cv2.THRESH_BINARY)[1]
-        plt.imshow(im, cmap='gray')
+        plt.imshow(img_ycrcb, cmap='gray')
         plt.show()
-    return im
+
+    return cv2.threshold(img_ycrcb, 0, 255, cv2.THRESH_BINARY)[1][1]
 
 
-
-# adds a frame to given picture (causes Errors)
+# adds a frame to given picture (causes Errors - not in Use anymore)
 # the offset is chosen to match the main shifting offset
 def add_frame(img, value: array):
     return cv2.copyMakeBorder(
@@ -128,7 +135,7 @@ def translate_to(matrix: array, to: int):
 
 
 # this function will take in the conjunction of TPDTR,
-# move it down &conjunct it with the binary hand
+# move it down & conjunct it with the binary hand
 # it will return the hand valley points
 def get_valley_points(conj: array, binary_arr: array):
     roll = np.roll(conj, VALLEY_GAP_OFFSET, axis=A_VERTICAL)
@@ -236,11 +243,6 @@ def draw_circle(c: tuple, img_gray: array, color=RED):
     return img_gray
 
 
-def draw_single_point(c: tuple, img_gray: array, color=RED):
-    cv2.circle(img_gray, c, 0, color, 3)
-    return img_gray
-
-
 def draw_points(centroids: array, img: array, color=RED, debug=True):
     p = 1
     for c in centroids:
@@ -262,11 +264,9 @@ def rotate(center, points, angle):
 
         # ( x' * cos(alpha) ) - ( y' * sin(alpha)) + off = x
         x = (new_pt[1] * np.cos(angle)) - (new_pt[0] * np.sin(angle)) + center[1]
-        # print(f'({new_pt[1]} * cos({angle})) - ({new_pt[0]} * sin({angle})) + {center[1]} = {x}')
 
         # ( x' * sin(alpha) ) + ( y' * cos(alpha)) + off = y
         y = (new_pt[1] * np.sin(angle)) + (new_pt[0] * np.cos(angle)) + center[0]
-        # print(f'({new_pt[1]} * sin({angle})) + ({new_pt[0]} * cos({angle})) + {center[0]} = {y} + \n')
 
         r = (round(y), round(x))
         result.append(r)
@@ -302,6 +302,10 @@ def draw_roi(img: array, p2: tuple, p4: tuple, debug=False, color=RED, thickness
 
 def cut_roi(img: array, p2: tuple, p4: tuple, right_hand):
     distance, off, q1, q3 = calculate_roi_params(p2, p4)
+
+    if off == 0 or distance == 0:
+        return None
+
     if not right_hand:
         q4 = (p4[0], p4[1] + off)
         q2 = (p2[0], p4[1] + distance + off)
@@ -315,18 +319,15 @@ def cut_roi(img: array, p2: tuple, p4: tuple, right_hand):
 
 
 def is_right_hand(sorted_list: array):
+
     # left
     d_x1_x2 = math.dist(sorted_list[0], sorted_list[1])
     d_x1_x3 = math.dist(sorted_list[0], sorted_list[2])
-    # d_x1_x4 = math.dist(sorted_list[0], sorted_list[3])
-    # avg_l = (d_x1_x2 + d_x1_x3 + d_x1_x4) / 3
     avg_l = (d_x1_x2 + d_x1_x3) / 2
 
     # right
-    # d_x4_x1 = math.dist(sorted_list[3], sorted_list[0])
     d_x4_x2 = math.dist(sorted_list[3], sorted_list[1])
     d_x4_x3 = math.dist(sorted_list[3], sorted_list[2])
-    # avg_r = (d_x4_x1 + d_x4_x2 + d_x4_x3) / 3
     avg_r = (d_x4_x2 + d_x4_x3) / 2
 
     if avg_r > avg_l:
