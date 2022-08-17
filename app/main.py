@@ -170,7 +170,7 @@ for file in path_list:
 
         # sort list by y-value
         sorted_list = sorted(centroids, key=lambda y: y[0])
-        print(f'sorted list: {sorted_list}')
+        print(f'Valley Coordinates: {sorted_list}')
 
         # distinguish between left and right hand
         if ALTERNATE_HAND_DETECTION:
@@ -227,8 +227,9 @@ for file in path_list:
 print('fin')
 total = success_counter + failure_counter
 print(f'Total analysed pictures: {total}\nsuccess={success_counter} failures={failure_counter}\n')
-log += f'\n\nTotal analysed pictures: {total}\nsuccess={success_counter} failures={failure_counter}\n'
 
+# Write Log
+log += f'\n\nTotal analysed pictures: {total}\nsuccess={success_counter} failures={failure_counter}\n'
 fp = open('D:\\Datengrab\\BA_workspace\\out\\' + folder_out + '\\log.txt', 'w')
 fp.write(log)
 fp.close()
