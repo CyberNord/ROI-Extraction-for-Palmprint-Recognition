@@ -8,7 +8,7 @@ import imutils as imutils
 import numpy as np
 from datetime import datetime
 
-from app.constants import ERODE_STEP, OUTPUT_FOLDER, ALTERNATE_HAND_DETECTION, SKIN_SAMPLE, MODE, ROTATE, \
+from app.settings import ERODE_STEP, OUTPUT_FOLDER, ALTERNATE_HAND_DETECTION, SKIN_SAMPLE, MODE, ROTATE, \
     DEBUG_PICTURES, DATABASE
 from app.meth import otsu, move_matrix_right, move_matrix_left, move_matrix_up, logical_conjunction, \
     get_valley_points, get_cond1, get_cond2, get_cond3, draw_circle, draw_points, rotate, draw_roi, \
@@ -288,4 +288,4 @@ fp.write(log)
 fp.close()
 
 # save settings too
-shutil.copyfile('constants.py', OUTPUT_FOLDER + folder_out + '\\settings.txt')
+shutil.copyfile('settings.py', OUTPUT_FOLDER + folder_out + '\\settings.txt')

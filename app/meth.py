@@ -5,7 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from numpy import array
 
-from app.constants import OTSU_LOWER, OTSU_HIGHER, PIXEL_OFFSET, PIXEL_OFFSET_NEG, VALLEY_GAP_OFFSET, \
+from app.settings import OTSU_LOWER, OTSU_HIGHER, PIXEL_OFFSET, PIXEL_OFFSET_NEG, VALLEY_GAP_OFFSET, \
     V_ALPHA, V_BETA, V_GAMMA, YCrCb_SKIN_LOWER, YCrCb_SKIN_HIGHER, DEBUG_PICTURES
 
 # Color values (BGR)
