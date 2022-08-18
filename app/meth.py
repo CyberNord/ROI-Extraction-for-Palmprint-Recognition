@@ -51,38 +51,35 @@ def mask(img_ycrcb: array):
 
 
 # cb_cr  (Mode 1)
-def cb_cr(img_ycrcb: array, cov: array):
+def cb_cr(img_ycrcb: array, sigma: array):
+
     # # exp[ -0.5 (cb_cr - mu) sigma^-1 (cb_cr - mu)^T]
-
     mu = np.mean(img_ycrcb, (0, 1))
-    # cov = np.array([[1,2],[3,4]])     # dummy cov for testing purposes only
-    sig_1 = np.linalg.inv(cov)
+    sig_1 = np.linalg.inv(sigma)
 
-    print('Processing picture:',end=' ')
-    with np.nditer(img_ycrcb, flags=['multi_index'], op_flags=['readwrite']) as itr:
-        while not itr.finished:
-            a = np.array([
-                (((img_ycrcb[itr.multi_index[0], itr.multi_index[1]])[2]),
-                 ((img_ycrcb[itr.multi_index[0], itr.multi_index[1]])[1]))
-            ])
-            cb_cr_mu = np.subtract(a, (mu[2], mu[1]))
+    print('Processing picture:', end=' ')
+
+    for idx_y, line in enumerate(img_ycrcb):
+        for idx_x, pixel in enumerate(line):
+            y, cr, cb = pixel
+
+            cb_cr_mu = np.subtract((cr, cb), (mu[1], mu[2]))
             cb_cr_mu_t = cb_cr_mu.transpose()
 
             mul = np.matmul(np.matmul(cb_cr_mu, sig_1), cb_cr_mu_t)
             exp = np.exp(-0.5 * mul)
 
-            if exp > 0.50:
-                img_ycrcb[itr.multi_index[0], itr.multi_index[1], :] = 255
+            if exp > 0.5:
+                img_ycrcb[idx_y, idx_x, :] = 0
             else:
-                img_ycrcb[itr.multi_index[0], itr.multi_index[1], :] = 0
-            #
-            if itr.multi_index[0] % 200 == 0 and itr.multi_index[1] % 500 == 0:
-                print('#', end='')
-            itr.iternext()
+                img_ycrcb[idx_y, idx_x, :] = 255
 
-        print(' ,done')
-        plt.imshow(img_ycrcb, cmap='gray')
-        plt.show()
+            if idx_y % 200 == 0 and idx_x % 500 == 0:
+                print('.', end='')
+
+    print(' ,done')
+    plt.imshow(img_ycrcb, cmap='gray')
+    plt.show()
 
     return img_ycrcb
 

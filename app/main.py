@@ -27,14 +27,16 @@ path_list = glob.glob(path)
 folder_out = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
 
 # generating skin sample cov Matrix for Mode 2
-if mode == 2:
+if mode == 1:
     skin_path = os.path.join(SKIN_SAMPLE)
     skin_s = cv2.imread(skin_path)
     skin_s = cv2.cvtColor(skin_s, cv2.COLOR_BGR2YCR_CB)
-    cov_Y = np.delete(skin_s, 0, 2)
-    cov_transpose = np.transpose(cov_Y, (0, 2, 1))
-    cov_reshape = np.reshape(cov_transpose, (2, -1))
-    cov = np.cov(cov_reshape)
+
+    cov_Y = np.delete(skin_s, 0, 2)                             # remove Y --> CrCb
+    cov_reshape = np.reshape(cov_Y, (-1, 2))                    # merge
+    cov_transpose = np.transpose(cov_reshape, (1, 0))
+
+    cov = np.cov(cov_transpose)
 
 # main loop for every picture in the database folder
 for file in path_list:
@@ -57,20 +59,8 @@ for file in path_list:
     # --------------------------------------------------------------
     # Generating Binary Image
 
-    # ... with masking in YCrCb - Colorspace
-    if mode == 1:
-        # 01 Gray - Colorspace
-        ycrcb = cv2.cvtColor(image, cv2.COLOR_BGR2YCR_CB)
-
-        # 02 Masking
-        img_bin = mask(ycrcb)
-
-        if DEBUG_PICTURES:
-            cv2.imwrite(out + '\\01_YCrCb.png', ycrcb)
-            cv2.imwrite(out + '\\02_img_otsu.png', img_bin)
-
     # ... with custom skin sample comparison in CrCb - Colorspace
-    elif mode == 2:
+    if mode == 1:
         # 01 YCrCb - Colorspace
         ycrcb = cv2.cvtColor(image, cv2.COLOR_BGR2YCR_CB)
 
@@ -86,6 +76,18 @@ for file in path_list:
             cv2.imwrite(out + '\\01_YCrCb.png', ycrcb)
             cv2.imwrite(out + '\\02_1_BW_YCrCb.png', img_skin)
             cv2.imwrite(out + '\\02_2_BW.png', img_bin)
+
+    # ... with masking in YCrCb - Colorspace
+    elif mode == 2:
+        # 01 Gray - Colorspace
+        ycrcb = cv2.cvtColor(image, cv2.COLOR_BGR2YCR_CB)
+
+        # 02 Masking
+        img_bin = mask(ycrcb)
+
+        if DEBUG_PICTURES:
+            cv2.imwrite(out + '\\01_YCrCb.png', ycrcb)
+            cv2.imwrite(out + '\\02_img_otsu.png', img_bin)
 
     # ... with Otsu - Algorithm
     else:
