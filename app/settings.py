@@ -1,21 +1,21 @@
 # User Settings
 OUTPUT_FOLDER = 'D:\\Datengrab\\BA_workspace\\out\\'    # output folder for ROI, log & debug pictures
-SKIN_SAMPLE = "db\\skin\\std1.png"                   # own skin sample for Mode 1
-DATABASE = "db\\11kHands\\small"                             # will analyse all data in folder
+SKIN_SAMPLE = "db\\skin\\std1.png"                     # own skin sample for Mode 1
+DATABASE = "db\\own\\set"                  # will analyse all data in folder
 # db\\casia\\test_17_alpha
-# db\\own\\set1
+# db\\own\\set
 # db\\11kHands\\small
 
-ERODE_STEP = True                                       # erodes potential small pixels
+ERODE_STEP = True                                      # erodes potential small pixels
 ALTERNATE_HAND_DETECTION = True                         # own method of detecting left/right hand
 DEBUG_PICTURES = True                                   # Show steps & visualisation of Algorithm
 
 # rotate the picture
-ROTATE = 180                                        # 0 , 90 , 180, 270  (all clockwise)
+ROTATE = 0                                              # 0 , 90 , 180, 270  (all clockwise)
 
 # Mode/Method for translating Greyscale/Color picture into binary form
 MODE = 3
-# 1: Skin sample comparison in CbCr Colorspace, time-consuming 1-2 min/pic
+# 1: Skin sample comparison in CbCr Colorspace, time-consuming 1 min/pic
 # 2: YCbCr masking (standard values), fast
 # 3: OTSU (Standard), fast
 

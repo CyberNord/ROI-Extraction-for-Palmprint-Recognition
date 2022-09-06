@@ -245,7 +245,7 @@ for file in path_list:
         output_image = imutils.rotate(valley_points, angle=angle)       # for visualisation
         image = imutils.rotate(image, angle=angle)                      # for cutting ROI
 
-        cv2.circle(output_image, center, 0, (255, 0, 255), 5)           # center point
+        # cv2.circle(output_image, center, 0, (255, 0, 255), 5)           # center point
         a = angle * np.pi / 180
 
         rotated_coordinates = rotate(center, sorted_list, a)

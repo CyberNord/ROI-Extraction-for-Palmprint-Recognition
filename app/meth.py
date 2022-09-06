@@ -13,12 +13,12 @@ from app.settings import OTSU_LOWER, OTSU_HIGHER, PIXEL_OFFSET, PIXEL_OFFSET_NEG
 BLACK = (0, 0, 0)
 DARK = (1, 1, 1)
 WHITE = (255, 255, 255)
-RED = (255, 0, 0)
+BLUE = (255, 0, 0)
 GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
+RED = (0, 0, 255)
 PINK = (255, 0, 255)
-YELLOW = (255, 255, 0)
-CYAN = (0, 255, 255)
+CYAN = (255, 255, 0)
+YELLOW = (0, 255, 255)
 
 # Axis
 A_HORIZONTAL = 1
@@ -70,9 +70,9 @@ def cb_cr(img_ycrcb: array, sigma: array):
             exp = np.exp(-0.5 * mul)
 
             if exp > 0.5:
-                img_ycrcb[idx_y, idx_x, :] = 0
-            else:
                 img_ycrcb[idx_y, idx_x, :] = 255
+            else:
+                img_ycrcb[idx_y, idx_x, :] = 0
 
             if idx_y % 200 == 0 and idx_x % 500 == 0:
                 print('.', end='')
