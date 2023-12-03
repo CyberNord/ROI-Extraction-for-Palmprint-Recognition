@@ -8,10 +8,10 @@ This is the public repository for the project done for my Bachelor Thesis at JKU
 The program consists of several files: `main.py` and `meth.py` should not be altered, as they form the core of the program. The file `settings.py` can be modified. To run the program, a database and an output folder must be specified in `settings.py`. Afterward, the file `main.py` can be executed, for instance, through the console. Note that the required libraries, as described in Section 5, must be installed.
 
 ### Input
-As input, a folder containing valid images of palms is expected. The image formats *.png and *.jpg have been successfully tested, but it is likely that this program supports all image formats supported by OpenCV [Bra00]. The hands may be in color or grayscale. To ensure a successful analysis, the hands should be presented with the palm facing up and fingers spread. The surface on which the hands lie should have as good a contrast to the hand as possible.
+As input, a folder containing valid images of palms is expected. The image formats *.png and *.jpg have been successfully tested, but it is likely that this program supports all image formats supported by OpenCV. The hands may be in color or grayscale. To ensure a successful analysis, the hands should be presented with the palm facing up and fingers spread. The surface on which the hands lie should have as good a contrast to the hand as possible.
 
 ### Output
-The program's results are stored in the folder specified in `settings.py`. All processed images are saved in a folder with a unique ID consisting of date and time (see Fig. 6.1). Additionally, a log file and a copy of the parameters under which these results were achieved are created.
+The program's results are stored in the folder specified in `settings.py`. All processed images are saved in a folder with a unique ID consisting of date and time. Additionally, a log file and a copy of the parameters under which these results were achieved are created.
 
 ### settings.py - File
 Here, the user can make all relevant settings.
@@ -30,5 +30,5 @@ Here, the user can make all relevant settings.
   - Mode 3: Otsu Algorithm - The Otsu Algorithm is the recommended default setting, as no further changes or inputs are required from the user.
 
 #### Advanced User Settings
-These settings should preferably not be changed. Here, fundamental variables such as the values of α, β, γ, needed for the three conditions (see Section 3.2.3), can be adjusted.
+These settings should preferably not be changed. Here, fundamental variables such as the values of α, β, γ, can be adjusted.
 
