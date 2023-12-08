@@ -5,7 +5,7 @@ This is the public repository for the project done for my Bachelor Thesis at JKU
 
 ## User Manual
 
-The program consists of several files: `main.py` and `meth.py` should not be altered, as they form the core of the program. The file `settings.py` can be modified. To run the program, a database and an output folder must be specified in `settings.py`. Afterward, the file `main.py` can be executed, for instance, through the console. Note that the required libraries, as described in Section 5, must be installed.
+The program consists of several files: `main.py` and `meth.py` should not be altered, as they form the core of the program. The file `settings.py` can be modified. To run the program, a database and an output folder must be specified in `settings.py`. Afterward, the file `main.py` can be executed, for instance, through the console. Note that the required libraries (OpenCV) must be installed.
 
 ### Input
 As input, a folder containing valid images of palms is expected. The image formats *.png and *.jpg have been successfully tested, but it is likely that this program supports all image formats supported by OpenCV. The hands may be in color or grayscale. To ensure a successful analysis, the hands should be presented with the palm facing up and fingers spread. The surface on which the hands lie should have as good a contrast to the hand as possible.
